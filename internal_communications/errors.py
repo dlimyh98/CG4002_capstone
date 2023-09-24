@@ -1,0 +1,2 @@
+class MaxCRCFailureError(Exception):
+    pass
