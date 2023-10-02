@@ -232,13 +232,13 @@ void get_dmp_data() {
 
   // Push SINGLE sample (of different data types) into tail of Circular Buffer
   // Note that accelerations_corrected has been sensitivity-corrected already under dmpGetLinearAccel()
-  // But raw_gyros is NOT sensitivity-corrected yet 
+  // But raw_gyros is NOT sensitivity-corrected
   IMU.AccX_window_small.push(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE);
   IMU.AccY_window_small.push(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE);
   IMU.AccZ_window_small.push(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE);
-  IMU.GyroX_window_small.push(raw_gyros.x / GYRO_SENSITIVITY);
-  IMU.GyroY_window_small.push(raw_gyros.y / GYRO_SENSITIVITY);
-  IMU.GyroZ_window_small.push(raw_gyros.z) / GYRO_SENSITIVITY;
+  IMU.GyroX_window_small.push(raw_gyros.x);
+  IMU.GyroY_window_small.push(raw_gyros.y);
+  IMU.GyroZ_window_small.push(raw_gyros.z);
   IMU.AccX_window_large.push(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE);
   IMU.AccY_window_large.push(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE);
   IMU.AccZ_window_large.push(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE);
