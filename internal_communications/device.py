@@ -35,6 +35,7 @@ class BeetleDevice:
 
         self.handshake_replied = False  
         self.completed_handshake = False
+        self.is_pressed = False
 
     def beetle_handler(self):
 
@@ -198,32 +199,31 @@ class BeetleDevice:
         except btle.BTLEException as e:
             print(f"Failed to send ACK: {e}")
 
-    def send_ext(self, debounce_interval=10, bullet_key = "d"):
+    def send_ext(self, debounce_interval=10, bullet_key = "space"):
         try:
             start_press = 0
-            is_pressed = False
 
-            if keyboard.is_pressed(bullet_key) and not is_pressed:
+            if keyboard.is_pressed(bullet_key) and not self.is_pressed:
                 start_press = time.time()
-                is_pressed = True
+                self.is_pressed = True
             
-            if is_pressed:
-            
+            if self.is_pressed:
                 # Send 'g' to Arduino
+                print("Entered")
                 encrypted_data = 'g'.encode('utf-8')
                 self.characteristic.write(encrypted_data)
+                time.sleep(1)
                 print("Sleeping")
-                time.sleep(0.5)
                 # Simulate getting the updated bullet count from somewhere
                 self.updated_bullet_count += 1  # Change this to the actual bullet count
-                bullet_count_bytes = struct.pack('b', self.updated_bullet_count)
+                bullet_count_bytes = struct.pack('B', self.updated_bullet_count)
                 
                 # Send the bullet count to Arduino without waiting for acknowledgment
                 self.characteristic.write(bullet_count_bytes)
 
                 # Reset the flag
-                is_pressed = False
+                self.is_pressed = False
 
         except Exception as e:
-            is_pressed = False
+            self.is_pressed = False
             print(f"Error in send_ext: {e}")
