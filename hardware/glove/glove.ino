@@ -13,8 +13,11 @@
 #define GYRO_CONFIG 0x1B
 #define ACCEL_CONFIG 0x1C
 
-const long GYRO_SENSITIVITY = 131;
-const long ACCEL_SENSITIVITY = 16384;
+const long GYRO_SENSITIVITY = 131;          // Full-scale == +-250deg/s
+const long ACCEL_SENSITIVITY = 16384;       // Full-scale == +-2g
+const float GYRO_SCALING_FACTOR = 1;        // Gyrometer scaling factor == 131/131 = 1
+const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 60/16384 = ~0.03
+#define BAUD_RATE 9600
 #define SPEC_SHEET_DIFFERENCE 2
 #define AVERAGING_COUNTER 300
 #define MOVING_AVERAGE_WINDOW_SIZE 10
@@ -116,7 +119,7 @@ s_packet packet = {0};
 
 void setup() {
   Wire.begin();
-  Serial.begin(9600);
+  Serial.begin(BAUD_RATE);
   calibrate_IMU();
   initialize_MPU();
   override_system_configs();                 // Overrides HPF setting and Gyro Sensitivity set by initialize_MPU()
@@ -132,48 +135,13 @@ void loop() {
     get_dmp_data();    // Expected to trigger at 100Hz frequency (Sampling Rate)
   } else {
     #ifdef COLLECTING_DATA_FOR_AI
-      // Gather SAMPLING_WINDOW_SIZE samples to form a sampling window, then Serial.print() packets over
-      if (is_AI_buffer_full) {
-        // Iterate through samples in Sample Window
-        for (int i = 0; i < SAMPLING_WINDOW_SIZE; i++) {
-          // For EACH sample, we retrieve the address of it's packet struct
-          int8_t* packet_struct_ptr = (int8_t*) &(AI_buffer[i]);
-
-          // Use the pointer to traverse through the packet struct's elements
-          Serial.print("AccX: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
-          Serial.print("AccY: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
-          Serial.print("AccZ: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
-
-          gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-          gyro_high_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-          Serial.print("GyroX: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );
-
-          gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-          gyro_high_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-          Serial.print("GyroY: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );
-
-          gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-          gyro_high_reading = *packet_struct_ptr;
-          Serial.print("GyroZ: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );          
-        }
-
-        // Reset flag
-        is_AI_buffer_full = false;
-      }
+      if (is_AI_buffer_full)
+        collect_data_for_AI();
     #endif
 
     #ifdef NOT_COLLECTING_DATA_FOR_AI
-      // Continuous stream from MPU at ~100Hz
-      //see_hma_effectiveness();
-      
-      // Send over to Internal Comms
-      //Serial.write(packet);
-      Serial.print("IMU.AccX: "); Serial.println(packet.AccX);
-      Serial.print("IMU.AccY: "); Serial.println(packet.AccY);
-      Serial.print("IMU.AccZ: "); Serial.println(packet.AccZ);
-      Serial.print("IMU.GyroX: "); Serial.println(packet.GyroX);
-      Serial.print("IMU.GyroY: "); Serial.println(packet.GyroY);
-      Serial.print("IMU.GyroZ: "); Serial.println(packet.GyroZ);
+      // Continuous stream from MPU at ~SAMPLING_RATE_FREQUENCY
+      send_to_internal_comms();
     #endif
   }
 }
@@ -239,8 +207,6 @@ void get_dmp_data() {
   }
 
   // Sensitize and scale up the data (to increase range for AI training)
-  const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 60/16384 = ~0.03
-  const float GYRO_SCALING_FACTOR = 1;        // Gyrometer scaling factor == 131/131 = 1
   packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
   packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
   packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
@@ -260,6 +226,46 @@ void get_dmp_data() {
       AI_buffer_index++;
     }
   #endif
+}
+
+void collect_data_for_AI() {
+  for (int i = 0; i < SAMPLING_WINDOW_SIZE; i++) {
+    // For EACH sample in AI_buffer, we retrieve the address of it's packet struct
+    int8_t* packet_struct_ptr = (int8_t*) &(AI_buffer[i]);
+
+    // Use the pointer to traverse through the packet struct's elements
+    Serial.print("AccX: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
+    Serial.print("AccY: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
+    Serial.print("AccZ: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
+
+    gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
+    gyro_high_reading = *packet_struct_ptr; packet_struct_ptr += 1;
+    Serial.print("GyroX: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );
+
+    gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
+    gyro_high_reading = *packet_struct_ptr; packet_struct_ptr += 1;
+    Serial.print("GyroY: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );
+
+    gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
+    gyro_high_reading = *packet_struct_ptr;
+    Serial.print("GyroZ: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );          
+  }
+
+  // Reset flag
+  is_AI_buffer_full = false;
+}
+
+void send_to_internal_comms() {
+  //see_hma_effectiveness();
+      
+  // Send over to Internal Comms
+  //Serial.write(packet);
+  Serial.print("IMU.AccX: "); Serial.println(packet.AccX);
+  Serial.print("IMU.AccY: "); Serial.println(packet.AccY);
+  Serial.print("IMU.AccZ: "); Serial.println(packet.AccZ);
+  Serial.print("IMU.GyroX: "); Serial.println(packet.GyroX);
+  Serial.print("IMU.GyroY: "); Serial.println(packet.GyroY);
+  Serial.print("IMU.GyroZ: "); Serial.println(packet.GyroZ);
 }
 
 void hull_moving_average() {
@@ -373,9 +379,9 @@ void moving_average_window_hull() {
 }
 
 void see_hma_effectiveness() {
-  Serial.print("Raw_corrected:"); Serial.print(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE); Serial.print(",");
-  Serial.print("SMA_10:"); Serial.print(IMU.AccZ_moving_average_large); Serial.print(",");
-  Serial.print("SMA_5:"); Serial.print(IMU.AccZ_moving_average_small); Serial.print(",");
+  Serial.print("Raw_Corrected:"); Serial.print(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE); Serial.print(",");
+  Serial.print("SMA_Large:"); Serial.print(IMU.AccZ_moving_average_large); Serial.print(",");
+  Serial.print("SMA_Small:"); Serial.print(IMU.AccZ_moving_average_small); Serial.print(",");
   Serial.print("HMA:"); Serial.println(IMU.AccZ_moving_average_hull);
 }
 
