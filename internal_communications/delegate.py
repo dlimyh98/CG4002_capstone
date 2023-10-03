@@ -1,9 +1,9 @@
 from bluepy import btle
-from queue import Queue
 import struct
 from rich import print
 from errors import MaxCRCFailureError
 import time
+from data_manager import DataManager
 
 ACK = 1
 BEETLE_ONE_DATA=2
@@ -13,6 +13,7 @@ BEETLE_FOUR_DATA=5 # Gun Beetle 1
 BEETLE_FIVE_DATA=6
 BEETLE_SIX_DATA=7 # Gun Beetle 2
 MAX_FAIL_COUNT = 10
+data_manager = DataManager()
 
 class MyDelegate(btle.DefaultDelegate):
    
@@ -54,6 +55,8 @@ class MyDelegate(btle.DefaultDelegate):
 
                 print(f"[red] Beetle One Packet received successfully: {pkt_data}[/red]")
 
+                data_manager.put_data(pkt_id, data)
+
             elif (pkt_id == BEETLE_TWO_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
@@ -66,6 +69,8 @@ class MyDelegate(btle.DefaultDelegate):
 
                 print(f"[red] Beetle Two Packet received successfully: {pkt_data}[/red]")
 
+                data_manager.put_data(pkt_id, data)
+
             elif (pkt_id == BEETLE_THREE_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
@@ -74,6 +79,8 @@ class MyDelegate(btle.DefaultDelegate):
                 self.seq_no = pkt_data[-3]
                 
                 print(f"[blue] Beetle Three Packet received successfully: {pkt_data}[/blue]")
+
+                data_manager.put_data(pkt_id, data)
 
             # Gun Beetle 1 No Ack
             elif (pkt_id == BEETLE_FOUR_DATA):
@@ -86,7 +93,8 @@ class MyDelegate(btle.DefaultDelegate):
                 self.seq_no = pkt_data[-3]
 
                 print(f"[purple]Beetle Four Packet received successfully: {pkt_data}[/purple]")
-
+                
+                data_manager.put_data(pkt_id, data)
             # Simulate stop n wait
             elif (pkt_id == BEETLE_FIVE_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
@@ -101,6 +109,8 @@ class MyDelegate(btle.DefaultDelegate):
 
                 print(f"[yellow]Beetle Five Packet received successfully: {pkt_data}[/yellow]")
 
+                data_manager.put_data(pkt_id, data)
+
             # Gun Beetle 2 No ack
             elif (pkt_id == BEETLE_SIX_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
@@ -112,6 +122,8 @@ class MyDelegate(btle.DefaultDelegate):
                 self.seq_no = pkt_data[-3]
 
                 print(f"[blue]Beetle Six Packet received successfully: {pkt_data}[/blue]")
+
+                data_manager.put_data(pkt_id, data)
 
             elif (pkt_id == ACK):
                 # added
