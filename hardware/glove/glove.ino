@@ -2,8 +2,6 @@
 #include <MPU6050_6Axis_MotionApps20.h>
 #include <Wire.h>
 #include <CircularBuffer.h>
-#include <assert.h>
-#define __ASSERT_USE_STDERR
 
 /**************** https://web.archive.org/web/20191019015332/https://www.i2cdevlib.com/devices/mpu6050#registers (MPU6050 FULL register map) ****************/
 /**************** https://www.i2cdevlib.com/docs/html/class_m_p_u6050.html#abd8fc6c18adf158011118fbccc7e7054 (Partial I2Cdev docs) ****************/
@@ -14,31 +12,20 @@
 #define CONFIG 0x1A
 #define GYRO_CONFIG 0x1B
 #define ACCEL_CONFIG 0x1C
-#define MOT_THR 0x1F
-#define MOT_DUR 0x20
-#define MOT_DETECT_CTRL 0x69
-#define INT_PIN_CFG 0x37
-#define INT_ENABLE 0x38
 
-#define BEETLE_INTERRUPT_PIN 2    // D2, INT0
-#define INT_STATUS 0x3A
-volatile bool is_ZRMOT_interrupt_raised = false;
-#define MOT_DETECT_STATUS 0x61
-
-#define ZRMOT_THR 0x21
-#define ZRMOT_DUR 0x22
-#define ZERO_TO_MOTION 0
-#define MOTION_TO_ZERO 1
-
-const long GYRO_SENSITIVITY = 131;
-const long ACCEL_SENSITIVITY = 16384;
+const long GYRO_SENSITIVITY = 131;          // Full-scale == +-250deg/s
+const long ACCEL_SENSITIVITY = 16384;       // Full-scale == +-2g
+const float GYRO_SCALING_FACTOR = 1;        // Gyrometer scaling factor == 131/131 = 1
+const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 60/16384 = ~0.03
+#define BAUD_RATE 9600
 #define SPEC_SHEET_DIFFERENCE 2
-#define AVERAGING_COUNTER 300
+#define AVERAGING_COUNTER 500
 #define MOVING_AVERAGE_WINDOW_SIZE 10
 #define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 3
 #define SAMPLING_RATE_FREQUENCY 100
 
-#define FLEX_SENSOR_PIN A1
+#define COLLECTING_DATA_FOR_AI
+//#define NOT_COLLECTING_DATA_FOR_AI
 
 /************************************** MPU control variables (from Jeff Rowberg) **************************************/
 MPU6050 mpu;
@@ -48,10 +35,7 @@ bool dmpReady = false;       // set TRUE if DMP initialization is successful
 uint16_t packetSize = 42;    // expected DMP packet size (default is 42 bytes)
 uint16_t fifoCount;          // count of all bytes currently in FIFO
 uint8_t fifoBuffer[64];      // FIFO storage buffer
-volatile bool mpuInterrupt = false;
-void dmpDataReady() {
-  mpuInterrupt = true;
-}
+
 
 // Orientation/motion vars from DMP
 Quaternion q;                         // [w, x, y, z], quaternion container
@@ -69,7 +53,6 @@ typedef struct s_IMU {
   float GyroX_offset, GyroY_offset, GyroZ_offset;
 
   /**************************** HULL MOVING AVERAGE ****************************/
-  int junk_data_counter = 0;
   // https://school.stockcharts.com/doku.php?id=technical_indicators:hull_moving_average
   CircularBuffer<long,MOVING_AVERAGE_WINDOW_SIZE/2> AccX_window_small;
   CircularBuffer<long,MOVING_AVERAGE_WINDOW_SIZE/2> AccY_window_small;
@@ -111,16 +94,21 @@ typedef struct s_IMU {
 s_IMU IMU;
 
 /************************************** Packet for Internal Comms **************************************/
-typedef struct s_packet {
+typedef struct __attribute__((packed, aligned(1))) s_packet {
   int8_t AccX, AccY, AccZ;
   int16_t GyroX, GyroY, GyroZ;
 } s_packet;
-s_packet packet;
+s_packet packet = {0};
+
+/************************************** AI data collection **************************************/
+#ifdef COLLECTING_DATA_FOR_AI
+  #define ACCEL_THRESHOLD_FOR_COLLECTION 500
+#endif
 
 
 void setup() {
   Wire.begin();
-  Serial.begin(9600);
+  Serial.begin(BAUD_RATE);
   calibrate_IMU();
   initialize_MPU();
   override_system_configs();                 // Overrides HPF setting and Gyro Sensitivity set by initialize_MPU()
@@ -130,33 +118,43 @@ void setup() {
 
 // Internal clock ~8Mhz
 void loop() {
-  // dmpGetCurrentFIFOPacket() is overflow proof, use it!
-  // Polling for INT_STATUS and checking DMP_INT, then reading DMP's FIFO is unreliable (conflicts with Serial.reads())
+  // dmpGetCurrentFIFOPacket() is overflow proof, use it! 
+  // Alternative method of polling for INT_STATUS and checking DMP_INT, then reading DMP's FIFO is unreliable (conflicts with Serial.reads())
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-    get_dmp_data();    // Expected to trigger at 100Hz frequency (Sampling Rate)
+    // Expected to trigger at ~SAMPLING_RATE_FREQUENCY
+    get_dmp_data();
   } else {
-    //see_hma_effectiveness();
-    see_spear_accel();
+    // Continuous stream from MPU at ~SAMPLING_RATE_FREQUENCY
+    send_to_internal_comms();
   }
 }
 
 
 void get_dmp_data() {
-  IMU.junk_data_counter++;
   /********************************************* IMPORTANT NOTE *********************************************/
   /* Using i2cdevlib (Jeff Rowberg library), the ACCELEROMETER values are exactly HALF of what you expect
-      i.e For default accelerometer sensitivity of +-2g (16384LSB/g sensitivity), and MPU laying down, you would expect ~16834
-        However, Jeff Rowberg's library is written with an older spec, which specifies (8192LSB/g) for +-2g
+      i.e For default accelerometer sensitivity of +-2g (16384LSB/g sensitivity), and MPU laying down, you would expect ~16834 for Z-axis accel
+        However, Jeff Rowberg's library is written with an older spec, which specifies (8192LSB/g) for +-2g. Meaning we get ~8192 for Z-axis accel when MPU laying down
          https://forum.arduino.cc/t/incorrect-accelerometer-sensitivity-with-mpu-6050/461038/17
   */
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetAccel(&raw_accelerations, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
   mpu.dmpGetLinearAccel(&accelerations_corrected, &raw_accelerations, &gravity);
-  mpu.dmpGetGyro(&raw_gyros, fifoBuffer);
 
-  // We discard the first 15 samples from Accelerometer (they are heavily inaccurate)
-  if (IMU.junk_data_counter <= 15) return;
+  // For some reason, mpu.dmpGetGyro() is inaccurate (it doesn't tally with sanity_check())
+  // We fallback to getRotation, see related https://github.com/jrowberg/i2cdevlib/issues/613
+  //mpu.dmpGetGyro(&raw_gyros, fifoBuffer);
+  mpu.getRotation(&(raw_gyros.x), &(raw_gyros.y), &(raw_gyros.z));
+
+  #ifdef COLLECTING_DATA_FOR_AI
+    // Thresholding (based on Accelerometer values) for AI data collection
+    // For undisturbed MPU, absolute summation across AccX,AccY,AccZ is ~100
+    if (abs(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE) 
+        + abs(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE) 
+        + abs(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE) < ACCEL_THRESHOLD_FOR_COLLECTION)
+      return;
+  #endif
 
   // Save HEAD of circular buffer, as push() will cause it to be lost (assuming buffer at full capacity)
   IMU.AccX_saved_head_small = IMU.AccX_window_small.first();
@@ -173,6 +171,7 @@ void get_dmp_data() {
   IMU.GyroZ_saved_head_large = IMU.GyroZ_window_large.first();
 
   // Push SINGLE sample (of different data types) into tail of Circular Buffer
+  // Note that accelerations_corrected and raw_gyros IS NOT sensitivity-corrected yet
   IMU.AccX_window_small.push(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE);
   IMU.AccY_window_small.push(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE);
   IMU.AccZ_window_small.push(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE);
@@ -192,24 +191,26 @@ void get_dmp_data() {
   }
 
   // Sensitize and scale up the data (to increase range for AI training)
-  const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 60/16384 = ~0.03
-  const float GYRO_SCALING_FACTOR = 1;
   packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
   packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
   packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
   packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
   packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
   packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
+}
 
+
+void send_to_internal_comms() {
+  //see_hma_effectiveness();
+      
   // Send over to Internal Comms
   //Serial.write(packet);
-  //Serial.print("IMU.AccX: "); Serial.println(packet.AccX);
-  //Serial.print("IMU.AccY: "); Serial.println(packet.AccY);
-  //Serial.print("IMU.AccZ: "); Serial.println(packet.AccZ);
-  //Serial.print("IMU.GyroX: "); Serial.println(packet.GyroX);
-  //Serial.print("IMU.GyroY: "); Serial.println(packet.GyroY);
-  //Serial.print("IMU.GyroZ: "); Serial.println(packet.GyroZ);
-
+  Serial.print(packet.AccX); Serial.print(" ");
+  Serial.print(packet.AccY); Serial.print(" ");
+  Serial.print(packet.AccZ); Serial.print(" ");
+  Serial.print(packet.GyroX); Serial.print(" ");
+  Serial.print(packet.GyroY); Serial.print(" ");
+  Serial.println(packet.GyroZ);
 }
 
 void hull_moving_average() {
@@ -242,8 +243,8 @@ void moving_average_window_small() {
       IMU.AccY_moving_average_small = IMU.AccY_moving_average_small + ( (IMU.AccY_window_small.last() - IMU.AccY_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
       IMU.AccZ_moving_average_small = IMU.AccZ_moving_average_small + ( (IMU.AccZ_window_small.last() - IMU.AccZ_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
       IMU.GyroX_moving_average_small = IMU.GyroX_moving_average_small + ( (IMU.GyroX_window_small.last() - IMU.GyroX_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
-      IMU.GyroY_moving_average_small = IMU.GyroY_moving_average_small + ( (IMU.GyroX_window_small.last() - IMU.GyroX_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
-      IMU.GyroZ_moving_average_small = IMU.GyroZ_moving_average_small + ( (IMU.GyroX_window_small.last() - IMU.GyroX_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
+      IMU.GyroY_moving_average_small = IMU.GyroY_moving_average_small + ( (IMU.GyroY_window_small.last() - IMU.GyroY_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
+      IMU.GyroZ_moving_average_small = IMU.GyroZ_moving_average_small + ( (IMU.GyroZ_window_small.last() - IMU.GyroZ_saved_head_small) / (MOVING_AVERAGE_WINDOW_SIZE/2) );
   } else {
     IMU.is_first_time_computing_moving_average_small = false;
 
@@ -271,8 +272,8 @@ void moving_average_window_large() {
       IMU.AccY_moving_average_large = IMU.AccY_moving_average_large + ( (IMU.AccY_window_large.last() - IMU.AccY_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
       IMU.AccZ_moving_average_large = IMU.AccZ_moving_average_large + ( (IMU.AccZ_window_large.last() - IMU.AccZ_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
       IMU.GyroX_moving_average_large = IMU.GyroX_moving_average_large + ( (IMU.GyroX_window_large.last() - IMU.GyroX_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
-      IMU.GyroY_moving_average_large = IMU.GyroY_moving_average_large + ( (IMU.GyroX_window_large.last() - IMU.GyroX_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
-      IMU.GyroZ_moving_average_large = IMU.GyroZ_moving_average_large + ( (IMU.GyroX_window_large.last() - IMU.GyroX_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
+      IMU.GyroY_moving_average_large = IMU.GyroY_moving_average_large + ( (IMU.GyroY_window_large.last() - IMU.GyroY_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
+      IMU.GyroZ_moving_average_large = IMU.GyroZ_moving_average_large + ( (IMU.GyroZ_window_large.last() - IMU.GyroZ_saved_head_large) / MOVING_AVERAGE_WINDOW_SIZE );
   } else {
     IMU.is_first_time_computing_moving_average_large = false;
 
@@ -299,8 +300,8 @@ void moving_average_window_hull() {
       IMU.AccY_moving_average_hull= IMU.AccY_moving_average_hull + ( (IMU.AccY_window_raw_HMA.last() - IMU.AccY_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
       IMU.AccZ_moving_average_hull = IMU.AccZ_moving_average_hull + ( (IMU.AccZ_window_raw_HMA.last() - IMU.AccZ_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
       IMU.GyroX_moving_average_hull = IMU.GyroX_moving_average_hull + ( (IMU.GyroX_window_raw_HMA.last() - IMU.GyroX_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
-      IMU.GyroY_moving_average_hull = IMU.GyroY_moving_average_hull + ( (IMU.GyroX_window_raw_HMA.last() - IMU.GyroX_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
-      IMU.GyroZ_moving_average_hull = IMU.GyroZ_moving_average_hull + ( (IMU.GyroX_window_raw_HMA.last() - IMU.GyroX_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
+      IMU.GyroY_moving_average_hull = IMU.GyroY_moving_average_hull + ( (IMU.GyroY_window_raw_HMA.last() - IMU.GyroY_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
+      IMU.GyroZ_moving_average_hull = IMU.GyroZ_moving_average_hull + ( (IMU.GyroZ_window_raw_HMA.last() - IMU.GyroZ_saved_head_raw_HMA) / SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE );
   } else {
     IMU.is_first_time_computing_moving_average_hull = false;
 
@@ -323,16 +324,19 @@ void moving_average_window_hull() {
 }
 
 void see_hma_effectiveness() {
-  Serial.print("Raw_corrected:"); Serial.print(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE); Serial.print(",");
-  Serial.print("SMA_10:"); Serial.print(IMU.AccZ_moving_average_large); Serial.print(",");
-  Serial.print("SMA_5:"); Serial.print(IMU.AccZ_moving_average_small); Serial.print(",");
+  Serial.print("Raw_Corrected:"); Serial.print(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE); Serial.print(",");
+  Serial.print("SMA_Large:"); Serial.print(IMU.AccZ_moving_average_large); Serial.print(",");
+  Serial.print("SMA_Small:"); Serial.print(IMU.AccZ_moving_average_small); Serial.print(",");
   Serial.print("HMA:"); Serial.println(IMU.AccZ_moving_average_hull);
 }
 
-void see_spear_accel() {
-   Serial.print("AccX:"); Serial.print(packet.AccX); Serial.print(",");
-   Serial.print("AccY:"); Serial.print(packet.AccY); Serial.print(",");
+void read_sensors() {
+   Serial.print("AccX:"); Serial.println(packet.AccX);
+   Serial.print("AccY:"); Serial.println(packet.AccY);
    Serial.print("AccZ:"); Serial.println(packet.AccZ);
+   Serial.print("GyroX:"); Serial.println(packet.GyroX);
+   Serial.print("GyroY:"); Serial.println(packet.GyroY);
+   Serial.print("GyroZ:"); Serial.println(packet.GyroZ);
 }
 
 void initialize_MPU() {
@@ -352,20 +356,27 @@ void initialize_MPU() {
     mpu.setYGyroOffset(IMU.GyroY_offset);
     mpu.setZGyroOffset(IMU.GyroZ_offset);
 
-    // Enable Interrupts (optional)
-    //attachInterrupt(digitalPinToInterrupt(BEETLE_INTERRUPT_PIN), dmpDataReady, RISING);
-
-    // Calibrate
+    // PID calibration
     mpu.CalibrateAccel(6);
     mpu.CalibrateGyro(6);
-    mpu.PrintActiveOffsets();
+
+    /*
+    Serial.println(IMU.AccX_offset);
+    Serial.println(IMU.AccY_offset);
+    Serial.println(IMU.AccZ_offset);
+    Serial.println(IMU.GyroX_offset);
+    Serial.println(IMU.GyroY_offset);
+    Serial.println(IMU.GyroZ_offset);
+    */
+    //mpu.PrintActiveOffsets();
 
     // DMP is ready
     mpu.setDMPEnabled(true);
     dmpReady = true;
     Serial.println(F("DMP enabled..."));
    
-    // get expected DMP packet size for later comparison
+    // get expected DMP packet size for later comparison. Should be 42 (for our DMP version of 2.x)
+    // Note that other DMP versions have different FIFO packet size/layout (e.g. DMP version of 6.x has different size & layout)
     packetSize = mpu.dmpGetFIFOPacketSize();
   } else {
     // ERROR!
@@ -373,7 +384,6 @@ void initialize_MPU() {
     Serial.print(devStatus);
     Serial.println(F(")"));
   }
-
 }
 
 void override_system_configs() {  
@@ -387,7 +397,7 @@ void override_system_configs() {
   register_write(MPU_ADDRESS, ACCEL_CONFIG, 0x4);      // default [4:3]AFS_SEL (stick to default +-2g for now) 
                                                        // and [2:0]ACCEL_HPF of ~0.625Hz HPF
                                                        // if HPF set to HOLD, gravity is removed from threshold calculations. But we won't see the difference when directly reading from Accelerometer
-  //register_write(MPU_ADDRESS, GYRO_CONFIG, 0x0);    //  default [4:3]FS_SEL, for now we stick to default Gyroscope value of +- 250deg/s
+  register_write(MPU_ADDRESS, GYRO_CONFIG, 0x0);       //  default [4:3]FS_SEL, for now we stick to default Gyroscope value of +- 250deg/s
 }
 
 void override_sampling_rate_configs() {
@@ -416,15 +426,6 @@ void calibrate_IMU() {
   IMU.AccX_offset = 0, IMU.AccY_offset = 0, IMU.AccZ_offset = 0;
   IMU.GyroX_offset = 0, IMU.GyroY_offset = 0, IMU.GyroZ_offset = 0;
   calculate_average_offset();
-
-  /*
-  Serial.print("AccX_offset: "); Serial.println(IMU.AccX_offset);
-  Serial.print("AccY_offset: "); Serial.println(IMU.AccY_offset);
-  Serial.print("AccZ_offset: "); Serial.println(IMU.AccZ_offset);
-  Serial.print("GyroX_offset: "); Serial.println(IMU.GyroX_offset);
-  Serial.print("GyroY_offset: "); Serial.println(IMU.GyroY_offset);
-  Serial.print("GyroZ_offset: "); Serial.println(IMU.GyroZ_offset);
-  */
 }
 
 void calculate_average_offset() {
@@ -522,100 +523,4 @@ void sanity_check() {
   Serial.print(" | GyroY = "); Serial.print(GyroY);
   Serial.print(" | GyroZ = "); Serial.println(GyroZ);
   delay(333);
-}
-
-void configure_zero_motion_interrupt() {
-  int counter = 0;
-  float AccX_recorded = 0, AccY_recorded = 0, AccZ_recorded = 0;
-  float GyroX_recorded = 0, GyroY_recorded = 0, GyroZ_recorded = 0;
-  bool is_fresh_data = false;
-  /*********************************************************** CONFIGURE MOTION INTERRUPT ***********************************************************/
-  // 1. Determine the detection threshold for zero motion interrupt generation. Units for ZRMOT_THR is 1LSB/2mg.
-  //    - ZRMOT is detected when absolute value of accelerometer for THREE axes are EACH less than the ZRMOT_THR amount.
-  //    - If the above condition is met, the ZRMOT_DUR counter is incremented
-  //    - ZRMOT interrupt is raised when ZRMOT_DUR counter reaches the value we specify in ZRMOT_DUR
-
-  /* Unlike Free Fall or Motion detection, Zero Motion detection triggers an
-   * interrupt both when Zero Motion is first detected and when Zero Motion is no longer detected.
-
-   * When a zero motion event is detected, a Zero Motion Status will be indicated in MOT_DETECT_STATUS register (Register 0x61). 
-   * When a motion-to-zero-motion condition is detected, the status bit is set to 1. 
-   * When a zero-motion-to-motion condition is detected, the status bit is set to 0.*/
-  register_write(MPU_ADDRESS, ZRMOT_THR, 35);        // ZRMOT acceleration threshold set at (NUMBER * 2)
-
-  // 2. ZRMOT_DUR ticks at 16Hz (1LSB/64ms), and continually increments when ZRMOT_THR threshold is exceeded by ALL three accelerometer axes.
-  //    When ZRMOT_DUR's counter exceeds ZRMOT_DUR's threshold, we raise zero-motion detection interrupt
-  register_write(MPU_ADDRESS, ZRMOT_DUR, 1);        // Time threshold is set at (NUMBER * 2)
-
-  // 3. Other configurations for motion detection, namely...
-  //    - [5:4]ACCEL_ON_DELAY, specifies additional power-on delay for Accelerometer.
-  //        - We add 1ms to the default power-on delay of 4ms
-  //    - [3:2]FF_COUNT, configures Free-fall detection counter DECREMENT rate.
-  //        - Unused for us.
-  //    - [1:0]MOT_COUNT, configures Motion detection counter DECREMENT rate.
-  //        - Unused for us.
-  register_write(MPU_ADDRESS, MOT_DETECT_CTRL, 0x10);
-
-  // 4. Configure interrupt pin (INT of MPU6050, NOT the Beetle's interrupt pin)
-  //      - INT_LEVEL[7], INT pin is active-low
-  //      - LATCH_INT_EN[5], INT pin emits 50us pulse when triggered
-  register_write(MPU_ADDRESS, INT_PIN_CFG, 128);
-}
-
-void zero_motion_method() {
-  //pinMode(BEETLE_INTERRUPT_PIN, INPUT_PULLUP);                                              // D2(INT0) is active-low interrupt pin
-  //attachInterrupt(digitalPinToInterrupt(BEETLE_INTERRUPT_PIN), beetle_ISR_func, FALLING);   // D2 runs beetle_ISR_func() whenever it goes from HIGH->LOW 
-  //register_write(MPU_ADDRESS, INT_ENABLE, 0x20);
-
-  /*
-  Wire.beginTransmission(MPU_ADDRESS);
-  Wire.write(MOT_DETECT_STATUS);                      
-  Wire.endTransmission(false);                        // do not release the I2C bus 
-  Wire.requestFrom(MPU_ADDRESS, 1, false);            // request 1 byte
-  int zero_motion_binary = Wire.read();
-
-  if (zero_motion_binary == ZERO_TO_MOTION) {
-    // Begin recording data
-    is_fresh_data = true;
-    read_sensitize_IMU();
-
-    AccX_recorded = AccX_recorded + (IMU.AccX - IMU.AccX_offset);
-    AccY_recorded = AccY_recorded + (IMU.AccY - IMU.AccY_offset);
-    AccZ_recorded = AccZ_recorded + (IMU.AccZ - IMU.AccZ_offset);
-
-    GyroX_recorded = GyroX_recorded + (IMU.GyroX - IMU.GyroX_offset);
-    GyroY_recorded = GyroY_recorded + (IMU.GyroY - IMU.GyroY_offset);
-    GyroZ_recorded = GyroZ_recorded + (IMU.GyroZ - IMU.GyroZ_offset);
-
-    counter++;
-  } else {
-    if (is_fresh_data) {
-      // We just completed a motion, thus we have some motion data to process
-
-      if (counter >= 100) {
-        // If motion is above threshold period of time, we consider it valid
-        packet.AccX = (int8_t) (AccX_recorded*ACCEL_SCALING / counter);
-        packet.AccY = (int8_t) (AccY_recorded*ACCEL_SCALING / counter);
-        packet.AccZ = (int8_t) (AccZ_recorded*ACCEL_SCALING / counter);
-
-        packet.GyroX = (int16_t) (GyroX_recorded*GYRO_SCALING / counter);
-        packet.GyroY = (int16_t) (GyroY_recorded*GYRO_SCALING / counter);
-        packet.GyroZ = (int16_t) (GyroZ_recorded*GYRO_SCALING / counter);
-
-        Serial.print("Samples taken: "); Serial.println(counter);
-        Serial.print("packet.AccX: "); Serial.println(packet.AccX);
-        Serial.print("packet.AccY: "); Serial.println(packet.AccY);
-        Serial.print("packet.AccZ: "); Serial.println(packet.AccZ);
-        Serial.print("packet.GyroX: "); Serial.println(packet.GyroX);
-        Serial.print("packet.GyroY: "); Serial.println(packet.GyroY);
-        Serial.print("packet.GyroZ: "); Serial.println(packet.GyroZ);
-      }
-
-      // Irregardless if valid or junk data, we reset the variables used for collecting data
-      is_fresh_data = false;
-      counter = 0;
-      AccX_recorded = AccY_recorded = AccZ_recorded = 0;
-      GyroX_recorded = GyroY_recorded = GyroZ_recorded = 0;
-    }
-  }*/
 }
