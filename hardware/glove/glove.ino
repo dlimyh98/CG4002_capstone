@@ -102,7 +102,7 @@ s_packet packet = {0};
 
 /************************************** AI data collection **************************************/
 #ifdef COLLECTING_DATA_FOR_AI
-  #define ACCEL_THRESHOLD_FOR_COLLECTION 500
+  #define ACCEL_THRESHOLD_FOR_COLLECTION 150
 #endif
 
 
@@ -147,15 +147,6 @@ void get_dmp_data() {
   //mpu.dmpGetGyro(&raw_gyros, fifoBuffer);
   mpu.getRotation(&(raw_gyros.x), &(raw_gyros.y), &(raw_gyros.z));
 
-  #ifdef COLLECTING_DATA_FOR_AI
-    // Thresholding (based on Accelerometer values) for AI data collection
-    // For undisturbed MPU, absolute summation across AccX,AccY,AccZ is ~100
-    if (abs(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE) 
-        + abs(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE) 
-        + abs(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE) < ACCEL_THRESHOLD_FOR_COLLECTION)
-      return;
-  #endif
-
   // Save HEAD of circular buffer, as push() will cause it to be lost (assuming buffer at full capacity)
   IMU.AccX_saved_head_small = IMU.AccX_window_small.first();
   IMU.AccY_saved_head_small = IMU.AccY_window_small.first();
@@ -199,9 +190,15 @@ void get_dmp_data() {
   packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
 }
 
-
 void send_to_internal_comms() {
   //see_hma_effectiveness();
+
+  #ifdef COLLECTING_DATA_FOR_AI
+  // Thresholding (based on Accelerometer values) for AI data collection
+  // For undisturbed MPU, absolute summation across AccX,AccY,AccZ (scaled with SPEC_SHEET_DIFFERENCE already) is ~100
+    if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
+      return;
+  #endif
       
   // Send over to Internal Comms
   //Serial.write(packet);
@@ -328,15 +325,6 @@ void see_hma_effectiveness() {
   Serial.print("SMA_Large:"); Serial.print(IMU.AccZ_moving_average_large); Serial.print(",");
   Serial.print("SMA_Small:"); Serial.print(IMU.AccZ_moving_average_small); Serial.print(",");
   Serial.print("HMA:"); Serial.println(IMU.AccZ_moving_average_hull);
-}
-
-void read_sensors() {
-   Serial.print("AccX:"); Serial.println(packet.AccX);
-   Serial.print("AccY:"); Serial.println(packet.AccY);
-   Serial.print("AccZ:"); Serial.println(packet.AccZ);
-   Serial.print("GyroX:"); Serial.println(packet.GyroX);
-   Serial.print("GyroY:"); Serial.println(packet.GyroY);
-   Serial.print("GyroZ:"); Serial.println(packet.GyroZ);
 }
 
 void initialize_MPU() {
