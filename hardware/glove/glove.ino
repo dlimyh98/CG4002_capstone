@@ -2,8 +2,6 @@
 #include <MPU6050_6Axis_MotionApps20.h>
 #include <Wire.h>
 #include <CircularBuffer.h>
-#include <assert.h>
-#define __ASSERT_USE_STDERR
 
 /**************** https://web.archive.org/web/20191019015332/https://www.i2cdevlib.com/devices/mpu6050#registers (MPU6050 FULL register map) ****************/
 /**************** https://www.i2cdevlib.com/docs/html/class_m_p_u6050.html#abd8fc6c18adf158011118fbccc7e7054 (Partial I2Cdev docs) ****************/
@@ -70,7 +68,6 @@ typedef struct s_IMU {
   float GyroX_offset, GyroY_offset, GyroZ_offset;
 
   /**************************** HULL MOVING AVERAGE ****************************/
-  int junk_data_counter = 0;
   // https://school.stockcharts.com/doku.php?id=technical_indicators:hull_moving_average
   CircularBuffer<long,MOVING_AVERAGE_WINDOW_SIZE/2> AccX_window_small;
   CircularBuffer<long,MOVING_AVERAGE_WINDOW_SIZE/2> AccY_window_small;
@@ -116,14 +113,15 @@ typedef struct __attribute__((packed, aligned(1))) s_packet {
   int8_t AccX, AccY, AccZ;
   int16_t GyroX, GyroY, GyroZ;
 } s_packet;
-s_packet packet;
+s_packet packet = {0};
 
 /************************************** Buffer for AI data collection **************************************/
 #ifdef COLLECTING_DATA_FOR_AI
   #define SAMPLING_WINDOW_SIZE 50
   #define S_PACKET_PACKED_SIZE 9
+  #define ACCEL_THRESHOLD_FOR_COLLECTION 500
 
-  s_packet AI_buffer[SAMPLING_WINDOW_SIZE] = {{0}}; // SAMPLING_WINDOW_SIZE can't be too big, Arduino SRAM only has 2048 bytes (and DMP doesn't work above >85% memory usage)
+  s_packet AI_buffer[SAMPLING_WINDOW_SIZE] = {{0}}; // SAMPLING_WINDOW_SIZE can't be too big, Arduino SRAM only has 2048 bytes (and DMP doesn't work above >90% memory usage)
   int8_t gyro_high_reading;                         // Higher 8bits of int16_t Gyro
   int8_t gyro_low_reading;                          // Lower 8bits of int16_t Gyro
   int AI_buffer_index = 0;                          // Index to iterate through AI_buffer array
@@ -197,11 +195,10 @@ void loop() {
 
 
 void get_dmp_data() {
-  IMU.junk_data_counter++;
   /********************************************* IMPORTANT NOTE *********************************************/
   /* Using i2cdevlib (Jeff Rowberg library), the ACCELEROMETER values are exactly HALF of what you expect
-      i.e For default accelerometer sensitivity of +-2g (16384LSB/g sensitivity), and MPU laying down, you would expect ~16834
-        However, Jeff Rowberg's library is written with an older spec, which specifies (8192LSB/g) for +-2g
+      i.e For default accelerometer sensitivity of +-2g (16384LSB/g sensitivity), and MPU laying down, you would expect ~16834 for Z-axis accel
+        However, Jeff Rowberg's library is written with an older spec, which specifies (8192LSB/g) for +-2g. Meaning we get ~8192 for Z-axis accel when MPU laying down
          https://forum.arduino.cc/t/incorrect-accelerometer-sensitivity-with-mpu-6050/461038/17
   */
   mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -213,8 +210,14 @@ void get_dmp_data() {
   // We fallback to getRotation, see related https://github.com/jrowberg/i2cdevlib/issues/613
   mpu.getRotation(&(raw_gyros.x), &(raw_gyros.y), &(raw_gyros.z));
 
-  // We discard the first 15 samples from Accelerometer (they are heavily inaccurate)
-  if (IMU.junk_data_counter <= 15) return;
+  #ifdef COLLECTING_DATA_FOR_AI
+    // Thresholding (based on Accelerometer values) for AI data collection
+    // For undisturbed MPU, absolute summation across AccX,AccY,AccZ is ~100
+    if (abs(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE) 
+        + abs(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE) 
+        + abs(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE) < ACCEL_THRESHOLD_FOR_COLLECTION)
+      return;
+  #endif
 
   // Save HEAD of circular buffer, as push() will cause it to be lost (assuming buffer at full capacity)
   IMU.AccX_saved_head_small = IMU.AccX_window_small.first();
@@ -231,8 +234,7 @@ void get_dmp_data() {
   IMU.GyroZ_saved_head_large = IMU.GyroZ_window_large.first();
 
   // Push SINGLE sample (of different data types) into tail of Circular Buffer
-  // Note that accelerations_corrected has been sensitivity-corrected already under dmpGetLinearAccel()
-  // But raw_gyros is NOT sensitivity-corrected
+  // Note that accelerations_corrected and raw_gyros IS NOT sensitivity-corrected yet
   IMU.AccX_window_small.push(accelerations_corrected.x * SPEC_SHEET_DIFFERENCE);
   IMU.AccY_window_small.push(accelerations_corrected.y * SPEC_SHEET_DIFFERENCE);
   IMU.AccZ_window_small.push(accelerations_corrected.z * SPEC_SHEET_DIFFERENCE);
