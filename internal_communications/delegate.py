@@ -27,7 +27,7 @@ class MyDelegate(btle.DefaultDelegate):
     def handleNotification(self, cHandle, data):
         # Append data to buffer
         self.packet_buffer += data
-        self.beetle.total_bytes_received += len(data)
+        # self.beetle.total_bytes_received += len(data)
         # calculation should be number of data bytes and not the full 20 bytes
         if len(self.packet_buffer) % 20 != 0:
             self.beetle.fragmented_packet_count += 1
@@ -61,6 +61,9 @@ class MyDelegate(btle.DefaultDelegate):
                 
                 self.seq_no = pkt_data[-3]
 
+                if self.beetle.completed_handshake:
+                    self.beetle.send_ack(self.seq_no)
+
                 print(f"[red] Beetle Two Packet received successfully: {pkt_data}[/red]")
 
             elif (pkt_id == BEETLE_THREE_DATA):
@@ -78,14 +81,19 @@ class MyDelegate(btle.DefaultDelegate):
                 
                 self.validate_packet(data)
 
+                self.beetle.total_bytes_received += 2 #Only data bytes
+
                 self.seq_no = pkt_data[-3]
 
                 print(f"[purple]Beetle Four Packet received successfully: {pkt_data}[/purple]")
 
+            # Simulate stop n wait
             elif (pkt_id == BEETLE_FIVE_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
                 self.validate_packet(data)
+
+                self.beetle.total_bytes_received += 12 #Only data bytes
 
                 self.seq_no = pkt_data[-3]
                 if self.beetle.completed_handshake:
@@ -98,6 +106,8 @@ class MyDelegate(btle.DefaultDelegate):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
                 self.validate_packet(data)
+
+                self.beetle.total_bytes_received += 2 #Only data bytes
 
                 self.seq_no = pkt_data[-3]
 
