@@ -12,21 +12,6 @@
 #define CONFIG 0x1A
 #define GYRO_CONFIG 0x1B
 #define ACCEL_CONFIG 0x1C
-#define MOT_THR 0x1F
-#define MOT_DUR 0x20
-#define MOT_DETECT_CTRL 0x69
-#define INT_PIN_CFG 0x37
-#define INT_ENABLE 0x38
-
-#define BEETLE_INTERRUPT_PIN 2    // D2, INT0
-#define INT_STATUS 0x3A
-volatile bool is_ZRMOT_interrupt_raised = false;
-#define MOT_DETECT_STATUS 0x61
-
-#define ZRMOT_THR 0x21
-#define ZRMOT_DUR 0x22
-#define ZERO_TO_MOTION 0
-#define MOTION_TO_ZERO 1
 
 const long GYRO_SENSITIVITY = 131;
 const long ACCEL_SENSITIVITY = 16384;
@@ -433,7 +418,8 @@ void initialize_MPU() {
     dmpReady = true;
     Serial.println(F("DMP enabled..."));
    
-    // get expected DMP packet size for later comparison
+    // get expected DMP packet size for later comparison. Should be 42 (for our DMP version of 2.x)
+    // Note that other DMP versions have different FIFO packet size/layout (e.g. DMP version of 6.x has different size & layout)
     packetSize = mpu.dmpGetFIFOPacketSize();
   } else {
     // ERROR!
@@ -441,7 +427,6 @@ void initialize_MPU() {
     Serial.print(devStatus);
     Serial.println(F(")"));
   }
-
 }
 
 void override_system_configs() {  
@@ -590,100 +575,4 @@ void sanity_check() {
   Serial.print(" | GyroY = "); Serial.print(GyroY);
   Serial.print(" | GyroZ = "); Serial.println(GyroZ);
   delay(333);
-}
-
-void configure_zero_motion_interrupt() {
-  int counter = 0;
-  float AccX_recorded = 0, AccY_recorded = 0, AccZ_recorded = 0;
-  float GyroX_recorded = 0, GyroY_recorded = 0, GyroZ_recorded = 0;
-  bool is_fresh_data = false;
-  /*********************************************************** CONFIGURE MOTION INTERRUPT ***********************************************************/
-  // 1. Determine the detection threshold for zero motion interrupt generation. Units for ZRMOT_THR is 1LSB/2mg.
-  //    - ZRMOT is detected when absolute value of accelerometer for THREE axes are EACH less than the ZRMOT_THR amount.
-  //    - If the above condition is met, the ZRMOT_DUR counter is incremented
-  //    - ZRMOT interrupt is raised when ZRMOT_DUR counter reaches the value we specify in ZRMOT_DUR
-
-  /* Unlike Free Fall or Motion detection, Zero Motion detection triggers an
-   * interrupt both when Zero Motion is first detected and when Zero Motion is no longer detected.
-
-   * When a zero motion event is detected, a Zero Motion Status will be indicated in MOT_DETECT_STATUS register (Register 0x61). 
-   * When a motion-to-zero-motion condition is detected, the status bit is set to 1. 
-   * When a zero-motion-to-motion condition is detected, the status bit is set to 0.*/
-  register_write(MPU_ADDRESS, ZRMOT_THR, 35);        // ZRMOT acceleration threshold set at (NUMBER * 2)
-
-  // 2. ZRMOT_DUR ticks at 16Hz (1LSB/64ms), and continually increments when ZRMOT_THR threshold is exceeded by ALL three accelerometer axes.
-  //    When ZRMOT_DUR's counter exceeds ZRMOT_DUR's threshold, we raise zero-motion detection interrupt
-  register_write(MPU_ADDRESS, ZRMOT_DUR, 1);        // Time threshold is set at (NUMBER * 2)
-
-  // 3. Other configurations for motion detection, namely...
-  //    - [5:4]ACCEL_ON_DELAY, specifies additional power-on delay for Accelerometer.
-  //        - We add 1ms to the default power-on delay of 4ms
-  //    - [3:2]FF_COUNT, configures Free-fall detection counter DECREMENT rate.
-  //        - Unused for us.
-  //    - [1:0]MOT_COUNT, configures Motion detection counter DECREMENT rate.
-  //        - Unused for us.
-  register_write(MPU_ADDRESS, MOT_DETECT_CTRL, 0x10);
-
-  // 4. Configure interrupt pin (INT of MPU6050, NOT the Beetle's interrupt pin)
-  //      - INT_LEVEL[7], INT pin is active-low
-  //      - LATCH_INT_EN[5], INT pin emits 50us pulse when triggered
-  register_write(MPU_ADDRESS, INT_PIN_CFG, 128);
-}
-
-void zero_motion_method() {
-  //pinMode(BEETLE_INTERRUPT_PIN, INPUT_PULLUP);                                              // D2(INT0) is active-low interrupt pin
-  //attachInterrupt(digitalPinToInterrupt(BEETLE_INTERRUPT_PIN), beetle_ISR_func, FALLING);   // D2 runs beetle_ISR_func() whenever it goes from HIGH->LOW 
-  //register_write(MPU_ADDRESS, INT_ENABLE, 0x20);
-
-  /*
-  Wire.beginTransmission(MPU_ADDRESS);
-  Wire.write(MOT_DETECT_STATUS);                      
-  Wire.endTransmission(false);                        // do not release the I2C bus 
-  Wire.requestFrom(MPU_ADDRESS, 1, false);            // request 1 byte
-  int zero_motion_binary = Wire.read();
-
-  if (zero_motion_binary == ZERO_TO_MOTION) {
-    // Begin recording data
-    is_fresh_data = true;
-    read_sensitize_IMU();
-
-    AccX_recorded = AccX_recorded + (IMU.AccX - IMU.AccX_offset);
-    AccY_recorded = AccY_recorded + (IMU.AccY - IMU.AccY_offset);
-    AccZ_recorded = AccZ_recorded + (IMU.AccZ - IMU.AccZ_offset);
-
-    GyroX_recorded = GyroX_recorded + (IMU.GyroX - IMU.GyroX_offset);
-    GyroY_recorded = GyroY_recorded + (IMU.GyroY - IMU.GyroY_offset);
-    GyroZ_recorded = GyroZ_recorded + (IMU.GyroZ - IMU.GyroZ_offset);
-
-    counter++;
-  } else {
-    if (is_fresh_data) {
-      // We just completed a motion, thus we have some motion data to process
-
-      if (counter >= 100) {
-        // If motion is above threshold period of time, we consider it valid
-        packet.AccX = (int8_t) (AccX_recorded*ACCEL_SCALING / counter);
-        packet.AccY = (int8_t) (AccY_recorded*ACCEL_SCALING / counter);
-        packet.AccZ = (int8_t) (AccZ_recorded*ACCEL_SCALING / counter);
-
-        packet.GyroX = (int16_t) (GyroX_recorded*GYRO_SCALING / counter);
-        packet.GyroY = (int16_t) (GyroY_recorded*GYRO_SCALING / counter);
-        packet.GyroZ = (int16_t) (GyroZ_recorded*GYRO_SCALING / counter);
-
-        Serial.print("Samples taken: "); Serial.println(counter);
-        Serial.print("packet.AccX: "); Serial.println(packet.AccX);
-        Serial.print("packet.AccY: "); Serial.println(packet.AccY);
-        Serial.print("packet.AccZ: "); Serial.println(packet.AccZ);
-        Serial.print("packet.GyroX: "); Serial.println(packet.GyroX);
-        Serial.print("packet.GyroY: "); Serial.println(packet.GyroY);
-        Serial.print("packet.GyroZ: "); Serial.println(packet.GyroZ);
-      }
-
-      // Irregardless if valid or junk data, we reset the variables used for collecting data
-      is_fresh_data = false;
-      counter = 0;
-      AccX_recorded = AccY_recorded = AccZ_recorded = 0;
-      GyroX_recorded = GyroY_recorded = GyroZ_recorded = 0;
-    }
-  }*/
 }
