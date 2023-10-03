@@ -19,7 +19,7 @@ const float GYRO_SCALING_FACTOR = 1;        // Gyrometer scaling factor == 131/1
 const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 60/16384 = ~0.03
 #define BAUD_RATE 9600
 #define SPEC_SHEET_DIFFERENCE 2
-#define AVERAGING_COUNTER 300
+#define AVERAGING_COUNTER 500
 #define MOVING_AVERAGE_WINDOW_SIZE 10
 #define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 3
 #define SAMPLING_RATE_FREQUENCY 100
@@ -35,10 +35,7 @@ bool dmpReady = false;       // set TRUE if DMP initialization is successful
 uint16_t packetSize = 42;    // expected DMP packet size (default is 42 bytes)
 uint16_t fifoCount;          // count of all bytes currently in FIFO
 uint8_t fifoBuffer[64];      // FIFO storage buffer
-volatile bool mpuInterrupt = false;
-void dmpDataReady() {
-  mpuInterrupt = true;
-}
+
 
 // Orientation/motion vars from DMP
 Quaternion q;                         // [w, x, y, z], quaternion container
@@ -103,17 +100,9 @@ typedef struct __attribute__((packed, aligned(1))) s_packet {
 } s_packet;
 s_packet packet = {0};
 
-/************************************** Buffer for AI data collection **************************************/
+/************************************** AI data collection **************************************/
 #ifdef COLLECTING_DATA_FOR_AI
-  #define SAMPLING_WINDOW_SIZE 50
-  #define S_PACKET_PACKED_SIZE 9
   #define ACCEL_THRESHOLD_FOR_COLLECTION 500
-
-  s_packet AI_buffer[SAMPLING_WINDOW_SIZE] = {{0}}; // SAMPLING_WINDOW_SIZE can't be too big, Arduino SRAM only has 2048 bytes (and DMP doesn't work above >90% memory usage)
-  int8_t gyro_high_reading;                         // Higher 8bits of int16_t Gyro
-  int8_t gyro_low_reading;                          // Lower 8bits of int16_t Gyro
-  int AI_buffer_index = 0;                          // Index to iterate through AI_buffer array
-  bool is_AI_buffer_full = false;                   // Raised when AI_buffer has SAMPLING_WINDOW_SIZE elements stored
 #endif
 
 
@@ -132,17 +121,11 @@ void loop() {
   // dmpGetCurrentFIFOPacket() is overflow proof, use it! 
   // Alternative method of polling for INT_STATUS and checking DMP_INT, then reading DMP's FIFO is unreliable (conflicts with Serial.reads())
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-    get_dmp_data();    // Expected to trigger at 100Hz frequency (Sampling Rate)
+    // Expected to trigger at ~SAMPLING_RATE_FREQUENCY
+    get_dmp_data();
   } else {
-    #ifdef COLLECTING_DATA_FOR_AI
-      if (is_AI_buffer_full)
-        collect_data_for_AI();
-    #endif
-
-    #ifdef NOT_COLLECTING_DATA_FOR_AI
-      // Continuous stream from MPU at ~SAMPLING_RATE_FREQUENCY
-      send_to_internal_comms();
-    #endif
+    // Continuous stream from MPU at ~SAMPLING_RATE_FREQUENCY
+    send_to_internal_comms();
   }
 }
 
@@ -161,6 +144,7 @@ void get_dmp_data() {
 
   // For some reason, mpu.dmpGetGyro() is inaccurate (it doesn't tally with sanity_check())
   // We fallback to getRotation, see related https://github.com/jrowberg/i2cdevlib/issues/613
+  //mpu.dmpGetGyro(&raw_gyros, fifoBuffer);
   mpu.getRotation(&(raw_gyros.x), &(raw_gyros.y), &(raw_gyros.z));
 
   #ifdef COLLECTING_DATA_FOR_AI
@@ -213,59 +197,20 @@ void get_dmp_data() {
   packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
   packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
   packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
-
-  #ifdef COLLECTING_DATA_FOR_AI
-    // Push into our buffer of SAMPLING_WINDOW_SIZE size
-    AI_buffer[AI_buffer_index] = packet;
-
-    // Raise flag for saving to .txt file, if our Sampling Window is filled
-    if (AI_buffer_index == SAMPLING_WINDOW_SIZE-1) {
-      is_AI_buffer_full = true;
-      AI_buffer_index = 0;
-    } else {
-      AI_buffer_index++;
-    }
-  #endif
 }
 
-void collect_data_for_AI() {
-  for (int i = 0; i < SAMPLING_WINDOW_SIZE; i++) {
-    // For EACH sample in AI_buffer, we retrieve the address of it's packet struct
-    int8_t* packet_struct_ptr = (int8_t*) &(AI_buffer[i]);
-
-    // Use the pointer to traverse through the packet struct's elements
-    Serial.print("AccX: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
-    Serial.print("AccY: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
-    Serial.print("AccZ: "); Serial.println(*packet_struct_ptr); packet_struct_ptr += 1;
-
-    gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-    gyro_high_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-    Serial.print("GyroX: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );
-
-    gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-    gyro_high_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-    Serial.print("GyroY: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );
-
-    gyro_low_reading = *packet_struct_ptr; packet_struct_ptr += 1;
-    gyro_high_reading = *packet_struct_ptr;
-    Serial.print("GyroZ: "); Serial.println( (gyro_high_reading << 8) | gyro_low_reading );          
-  }
-
-  // Reset flag
-  is_AI_buffer_full = false;
-}
 
 void send_to_internal_comms() {
   //see_hma_effectiveness();
       
   // Send over to Internal Comms
   //Serial.write(packet);
-  Serial.print("IMU.AccX: "); Serial.println(packet.AccX);
-  Serial.print("IMU.AccY: "); Serial.println(packet.AccY);
-  Serial.print("IMU.AccZ: "); Serial.println(packet.AccZ);
-  Serial.print("IMU.GyroX: "); Serial.println(packet.GyroX);
-  Serial.print("IMU.GyroY: "); Serial.println(packet.GyroY);
-  Serial.print("IMU.GyroZ: "); Serial.println(packet.GyroZ);
+  Serial.print(packet.AccX); Serial.print(" ");
+  Serial.print(packet.AccY); Serial.print(" ");
+  Serial.print(packet.AccZ); Serial.print(" ");
+  Serial.print(packet.GyroX); Serial.print(" ");
+  Serial.print(packet.GyroY); Serial.print(" ");
+  Serial.println(packet.GyroZ);
 }
 
 void hull_moving_average() {
@@ -411,13 +356,19 @@ void initialize_MPU() {
     mpu.setYGyroOffset(IMU.GyroY_offset);
     mpu.setZGyroOffset(IMU.GyroZ_offset);
 
-    // Enable Interrupts (optional)
-    //attachInterrupt(digitalPinToInterrupt(BEETLE_INTERRUPT_PIN), dmpDataReady, RISING);
-
-    // Calibrate
+    // PID calibration
     mpu.CalibrateAccel(6);
     mpu.CalibrateGyro(6);
-    mpu.PrintActiveOffsets();
+
+    /*
+    Serial.println(IMU.AccX_offset);
+    Serial.println(IMU.AccY_offset);
+    Serial.println(IMU.AccZ_offset);
+    Serial.println(IMU.GyroX_offset);
+    Serial.println(IMU.GyroY_offset);
+    Serial.println(IMU.GyroZ_offset);
+    */
+    //mpu.PrintActiveOffsets();
 
     // DMP is ready
     mpu.setDMPEnabled(true);
@@ -475,15 +426,6 @@ void calibrate_IMU() {
   IMU.AccX_offset = 0, IMU.AccY_offset = 0, IMU.AccZ_offset = 0;
   IMU.GyroX_offset = 0, IMU.GyroY_offset = 0, IMU.GyroZ_offset = 0;
   calculate_average_offset();
-
-  /*
-  Serial.print("AccX_offset: "); Serial.println(IMU.AccX_offset);
-  Serial.print("AccY_offset: "); Serial.println(IMU.AccY_offset);
-  Serial.print("AccZ_offset: "); Serial.println(IMU.AccZ_offset);
-  Serial.print("GyroX_offset: "); Serial.println(IMU.GyroX_offset);
-  Serial.print("GyroY_offset: "); Serial.println(IMU.GyroY_offset);
-  Serial.print("GyroZ_offset: "); Serial.println(IMU.GyroZ_offset);
-  */
 }
 
 void calculate_average_offset() {
