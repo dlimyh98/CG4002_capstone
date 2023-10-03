@@ -25,7 +25,6 @@ const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 6
 #define SAMPLING_RATE_FREQUENCY 100
 
 #define COLLECTING_DATA_FOR_AI
-//#define NOT_COLLECTING_DATA_FOR_AI
 
 /************************************** MPU control variables (from Jeff Rowberg) **************************************/
 MPU6050 mpu;
@@ -102,7 +101,7 @@ s_packet packet = {0};
 
 /************************************** AI data collection **************************************/
 #ifdef COLLECTING_DATA_FOR_AI
-  #define ACCEL_THRESHOLD_FOR_COLLECTION 150
+  #define ACCEL_THRESHOLD_FOR_COLLECTION 200
 #endif
 
 
@@ -123,7 +122,7 @@ void loop() {
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
     // Expected to trigger at ~SAMPLING_RATE_FREQUENCY
     get_dmp_data();
-  } else {
+
     // Continuous stream from MPU at ~SAMPLING_RATE_FREQUENCY
     send_to_internal_comms();
   }
@@ -202,11 +201,11 @@ void send_to_internal_comms() {
       
   // Send over to Internal Comms
   //Serial.write(packet);
-  Serial.print(packet.AccX); Serial.print(" ");
-  Serial.print(packet.AccY); Serial.print(" ");
-  Serial.print(packet.AccZ); Serial.print(" ");
-  Serial.print(packet.GyroX); Serial.print(" ");
-  Serial.print(packet.GyroY); Serial.print(" ");
+  Serial.print(packet.AccX); Serial.print(",");
+  Serial.print(packet.AccY); Serial.print(",");
+  Serial.print(packet.AccZ); Serial.print(",");
+  Serial.print(packet.GyroX); Serial.print(",");
+  Serial.print(packet.GyroY); Serial.print(",");
   Serial.println(packet.GyroZ);
 }
 
