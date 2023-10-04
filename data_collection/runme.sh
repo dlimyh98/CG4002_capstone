@@ -42,3 +42,8 @@ For Ubuntu, https://stackoverflow.com/questions/33303899/issue-on-import-psutil-
 
 Check number of PHYSICAL CORES
 print(psutil.cpu_count(logical=False))
+
+
+usbipd wsl list
+usbipd wsl attach --busid 2-2
+usbipd wsl detach --busid 2-2
