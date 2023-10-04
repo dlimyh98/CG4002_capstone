@@ -8,11 +8,11 @@ from multiprocessing import Pool
 from itertools import repeat
 from enum import Enum
 
-DATA_DUMPS_FOLDER_NAME = "data_dumps"
-COMMON_ARDUINO_DUMP_FILE_NAME = 'arduino_dump.txt'
 SERIAL_PORT = '/dev/ttyACM0'
 BAUD_RATE = 9600
 SAMPLING_WINDOW_SIZE = 32
+DATA_DUMPS_FOLDER_NAME = "data_dumps"
+COMMON_ARDUINO_DUMP_FILE_NAME = 'arduino_dump.txt'
 SENSORS = ["AccX", "AccY", "AccZ", "GyroX", "GyroY", "GyroZ"]
 
 class SENSOR_ENUM(Enum):
@@ -41,7 +41,7 @@ def parse_commands():
 ## Wipe contents of <action_name>/<user_name>, to prepare for fresh data collection
 def wipe(action_name, user_name):
     folder_path = os.path.join(os.getcwd(), DATA_DUMPS_FOLDER_NAME, action_name, user_name)
-    files = glob.glob(folder_path + '/*')
+    files = glob.glob(folder_path + '/*.txt')
 
     # Note that this won't remove subdirectories. But we didn't create any subdirectories anyway
     for file in files:
