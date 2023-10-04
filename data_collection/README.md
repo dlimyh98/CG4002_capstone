@@ -10,8 +10,8 @@
     
 3. Edit the `SERIAL_PORT` variable in `collect.py` appropriately.
     
-4. **ONLY APPLICABLE FOR WINDOWS 10 AND WSL2 USERS**  
-  It's already mentioned under _Windows 10 and WSL2 guide_, but just putting here incase you forgot.
+4. **ONLY APPLICABLE FOR WINDOWS 10 RUNNING WSL2 USERS**  
+  It's already mentioned under _Windows 10 running WSL2 guide_, but just putting here incase you forgot.
     1. Launch a WSL command line (Ubuntu for me) **and keep it open**.
     2. Open `Powershell` **in administrator mode**.
     3. Connect the Beetle to your laptop using micro-usb cable.
@@ -23,6 +23,8 @@
     
 5. **ONLY APPLICABLE FOR LINUX USERS**  
     1. Connect the Beetle to your laptop using micro-usb cable.
+
+**I'm not sure if Windows 11 users will have problems ensuring the Beetle and `collect.py` can communicate through Serial. Hopefully it works just like Linux (just Plug n Play)**
     
 6. Run `collect.py` with the appropriate command-line arguments and permissions.
     1. `sudo python3 collect.py -n damien -a fist` means you want to collect data for _fist_ actions, and file it under `data_dumps/fist/damien`.
@@ -43,19 +45,19 @@
 10. See _Data Format guide_ section for more information on how the data is formatted.
 
 11. I suppose you want to disconnect the Beetle from your laptop now.
-    1. **ONLY APPLICABLE FOR WINDOWS 10 AND WSL2 USERS**  
+    1. **ONLY APPLICABLE FOR WINDOWS 10 RUNNING WSL2 USERS**  
   In `Powershell`, run `usbipd wsl detach --busid <busid>` to disconnect WSL from the your `dev\tty` port.
   Alternatively, you can just unplug the cable connecting the Beetle to your laptop.
     2. **ONLY APPLICABLE FOR LINUX USERS**  
       Just unplug the cable from the Beetle to your laptop. Or maybe there is a more Linux-ey way to disconnect?
 
 
-## Windows 10 and WSL2 guide
+## Windows 10 running WSL2 guide
 ### Background
 * Serial devices are not mounted properly if you are running WSL2 on Windows 10. So you can't directly see the Serial Port you are using for the Beetle.
   * https://github.com/microsoft/WSL/issues/4322
 * Online chatter said that reverting to WSL1 allows you to see the Serial Port, but I couldn't get it to work.
-* So we will using `usbipd-win` project as a workaround.
+* So we will be using `usbipd-win` project as a workaround.
 
 ### My WSL2 specs
 * Windows 10 
@@ -168,7 +170,7 @@ E
   
   
 ### What is Acc\<something\>.txt or Gyro\<something\>.txt
-* `Acc\<something\>.txt` or `or Gyro\<something\>.txt` is the post-processed values of `arduino_dump.txt`
+* `Acc\<something\>.txt` or `Gyro\<something\>.txt` is the post-processed values of `arduino_dump.txt`
 
 * Every line contains the sensor readings (for **one** corresponding sampling window) in the format \<sample_1_reading\> , <sample_2_reading\> , ... , <SAMPLE_WINDOW_SIZE_reading\>.
 
