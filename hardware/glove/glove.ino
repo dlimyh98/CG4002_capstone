@@ -23,7 +23,7 @@ const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 6
 #define MOVING_AVERAGE_WINDOW_SIZE 2
 #define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 1
 #define SAMPLING_RATE_FREQUENCY 20
-#define ACCEL_THRESHOLD_FOR_COLLECTION 
+#define ACCEL_THRESHOLD_FOR_COLLECTION 0
 
 /************************************** MPU control variables (from Jeff Rowberg) **************************************/
 MPU6050 mpu;
