@@ -8,11 +8,12 @@ characteristic_uuid = "0000dfb1-0000-1000-8000-00805f9b34fb"  # Replace with the
 beetle_devices = [
     {"address": "D0:39:72:E4:86:9C", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b"},
     {"address": "D0:39:72:E4:8C:09", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "c"},
-    {"address": "D0:39:72:E4:86:F8", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "d"},
+    {"address": "D0:39:72:E4:86:F8", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "d"}, # Vest Beetle 1
     {"address": "D0:39:72:E4:8C:4D", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "e"}, # Gun Beetle 1
-    {"address": "D0:39:72:E4:86:B4", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "f"}, 
+    {"address": "C4:BE:84:20:19:73", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "f"}, # Glove Beetle 1
     {"address": "D0:39:72:E4:80:9F", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "g"}, # Gun Beetle 2
 ]
+
 
 def main():
     beetle_threads = []
