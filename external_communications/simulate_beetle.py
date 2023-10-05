@@ -16,7 +16,7 @@ class BeetleSimulator():
 
             # put the packet into the queue
             self.global_queue.put(packet)
-            print(f"Packet: {packet}")
+            print(f"Packet: {packet} | Queue Size: {self.global_queue.qsize()}")
 
             # delay for 0.5 seconds before sending the next packet
             time.sleep(2)

@@ -11,47 +11,39 @@ REMOTE_BIND_PORT = 8080
 class BeetleLaptopPipeline:
     def __init__(self):
         self.global_queue = queue.Queue()
-
-        # for i in range(50):
-        #     self.global_queue.put(i)
-
-        # initialise classes
         self.beetle_simulator = BeetleSimulator(self.global_queue)
-        self.loop = asyncio.get_event_loop()
-        self.relay_node = LaptopClient(HOSTNAME, REMOTE_BIND_PORT, self.loop)
-    
-    async def start(self):
+        self.relay_node = LaptopClient(HOSTNAME, REMOTE_BIND_PORT)
+
+    def start(self):
         self.beetle_simulator.start()
-        asyncio.create_task(self.relay_node.start())
+        self.relay_node.start()
+
+        # Wait for the event to signal the loop is ready
+        self.relay_node.loop_ready.wait()
+
+        # Run the LaptopClient's asynchronous start method
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.relay_node.async_start())
+
+        print("Starting redirect_Beetle_To_RelayNode...")
         self.redirect_Beetle_To_RelayNode()
         
-            
     def redirect_Beetle_To_RelayNode(self):
         while True:
-            try:
-                data = self.global_queue.get()
-                # print(f"Beetle Data: {data}")
-                asyncio.run_coroutine_threadsafe(self.async_put(data), self.relay_node.loop)
-                # await self.relay_node.send_queue.put(data)
-               
-                print(f"Data transferred: {data}")
-            except Exception as e:
-                print(f"Error: {e}")
+            data = self.global_queue.get()
+            print(f"Data taken: {data} | Queue Size After Taking: {self.global_queue.qsize()}")
+            asyncio.run_coroutine_threadsafe(self.relay_node.enqueue_data(data), self.relay_node.loop)
+            print(f"Data transferred: {data}")
 
-    async def async_put(self, data):
-        print("enter async_put coroutine")
-        await self.relay_node.send_queue.put(data)
-        print(self.relay_node.send_queue)
-
-async def main():
+def main():
     try:
         beetleLaptopPipeline = BeetleLaptopPipeline()
-        await beetleLaptopPipeline.start()
+        beetleLaptopPipeline.start()
     except KeyboardInterrupt:
         pass
 
 if __name__ == '__main__':
     try:
-        asyncio.run(main())
+        main()
     except KeyboardInterrupt:
         pass
