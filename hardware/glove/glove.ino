@@ -23,8 +23,7 @@ const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 6
 #define MOVING_AVERAGE_WINDOW_SIZE 10
 #define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 3
 #define SAMPLING_RATE_FREQUENCY 100
-
-#define COLLECTING_DATA_FOR_AI
+#define ACCEL_THRESHOLD_FOR_COLLECTION 200
 
 /************************************** MPU control variables (from Jeff Rowberg) **************************************/
 MPU6050 mpu;
@@ -98,11 +97,6 @@ typedef struct __attribute__((packed, aligned(1))) s_packet {
   int16_t GyroX, GyroY, GyroZ;
 } s_packet;
 s_packet packet = {0};
-
-/************************************** AI data collection **************************************/
-#ifdef COLLECTING_DATA_FOR_AI
-  #define ACCEL_THRESHOLD_FOR_COLLECTION 200
-#endif
 
 
 void setup() {
@@ -192,12 +186,10 @@ void get_dmp_data() {
 void send_to_internal_comms() {
   //see_hma_effectiveness();
 
-  #ifdef COLLECTING_DATA_FOR_AI
-  // Thresholding (based on Accelerometer values) for AI data collection
+  // Thresholding (based on Accelerometer values)
   // For undisturbed MPU, absolute summation across AccX,AccY,AccZ (scaled with SPEC_SHEET_DIFFERENCE already) is ~100
-    if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
-      return;
-  #endif
+  if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
+    return;
       
   // Send over to Internal Comms
   //Serial.write(packet);
