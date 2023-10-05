@@ -9,8 +9,12 @@
     2. Total clusterfuck for Windows 10 running WSL2 (according to me). Guide provided under _Windows 10 and WSL2 guide_. **Follow the steps in that guide first before continuing**.
     
 3. Edit the `SERIAL_PORT` variable in `collect.py` appropriately.
+
+4. Ensure the 'BAUD_RATE' variable matches Beetle's baud rate (should be 9600)
+
+5. Ensure that 'SAMPLING_WINDOW_SIZE' matches what the AI expects
     
-4. **ONLY APPLICABLE FOR WINDOWS 10 RUNNING WSL2 USERS**  
+6. **ONLY APPLICABLE FOR WINDOWS 10 RUNNING WSL2 USERS**  
   It's already mentioned under _Windows 10 running WSL2 guide_, but just putting here incase you forgot.
     1. Launch a WSL command line (Ubuntu for me) **and keep it open**.
     2. Open `Powershell` **in administrator mode**.
@@ -21,32 +25,32 @@
         1. You should see _Attached-WSL_ under `STATE` for the `BUSID` you just inputted.
     7. Or you can just listen for the disconnection sound that your laptop plays when you disconnect something.
     
-5. **ONLY APPLICABLE FOR LINUX USERS**  
+7. **ONLY APPLICABLE FOR LINUX USERS**  
     1. Connect the Beetle to your laptop using micro-usb cable.
 
 **I'm not sure if Windows 11 users will have problems ensuring the Beetle and `collect.py` can communicate through Serial. Hopefully it works just like Linux (just Plug n Play)**
     
-6. Run `collect.py` with the appropriate command-line arguments and permissions.
+8. Run `collect.py` with the appropriate command-line arguments and permissions.
     1. `sudo python3 collect.py -n damien -a fist` means you want to collect data for _fist_ actions, and file it under `data_dumps/fist/damien`.
     2. You need `sudo` access so that `collect.py` can read your `\dev\tty` port.
   
-7. Observe the output of `collect.py`. It **must** say the following **two** lines below.  
+9. Observe the output of `collect.py`. It **must** say the following **two** lines below.  
   If you don't see it, it means that the Beetle failed to connect to the MPU (it happens sometimes). You can do `Ctrl-C` to stop `collect.py`, and reattempt step 6 again **until it succeeds**.
     1. _MPU6050 connection successful_
     2. _>****......>......DMP enabled..._
 
-8. You are now ready for data collection. Do the move 'x' amount of times.
+10. You are now ready for data collection. Do the move 'x' amount of times.
     1. Recommended for 'x' to be ~50. Above that, fatigue sets in and the reading might not be accurate. Post-processing takes longer too.
     
-9. Once you are done collecting data, `Ctrl-C` to stop `collect.py`. You should observe the following output in-order...
+11. Once you are done collecting data, `Ctrl-C` to stop `collect.py`. You should observe the following output in-order...
     1. _Ctrl-C pressed, stopping AI data collection_
     2. _Stopped serial communication with Arduino_
     3. _Post-processing data, please wait..._
     4. _Done post-processing_
     
-10. See _Data Format guide_ section for more information on how the data is formatted.
+12. See _Data Format guide_ section for more information on how the data is formatted.
 
-11. I suppose you want to disconnect the Beetle from your laptop now.
+13. I suppose you want to disconnect the Beetle from your laptop now.
     1. **ONLY APPLICABLE FOR WINDOWS 10 RUNNING WSL2 USERS**  
   In `Powershell`, run `usbipd wsl detach --busid <busid>` to disconnect WSL from the your `dev\tty` port.
   Alternatively, you can just unplug the cable connecting the Beetle to your laptop.
