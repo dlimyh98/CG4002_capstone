@@ -229,7 +229,6 @@ void handle_reset_switch() {
       if (reading != current_reset_switch_state) {
         // assert that reading is NOT due to debouncing
         num_of_times_shot = 0;
-        IR_receive_init();
         current_reset_switch_state = reading;
       }
   }
