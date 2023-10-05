@@ -10,9 +10,9 @@
     
 3. Edit the `SERIAL_PORT` variable in `collect.py` appropriately.
 
-4. Ensure the 'BAUD_RATE' variable matches Beetle's baud rate (should be 9600)
+4. Ensure the `BAUD_RATE` variable matches Beetle's baud rate (should be 9600)
 
-5. Ensure that 'SAMPLING_WINDOW_SIZE' matches what the AI expects
+5. Ensure that `SAMPLING_WINDOW_SIZE` matches what the AI expects
     
 6. **ONLY APPLICABLE FOR WINDOWS 10 RUNNING WSL2 USERS**  
   It's already mentioned under _Windows 10 running WSL2 guide_, but just putting here incase you forgot.
