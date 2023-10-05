@@ -97,15 +97,15 @@ class MyDelegate(btle.DefaultDelegate):
                 data_manager.put_data(pkt_id, data)
             # Simulate stop n wait
             elif (pkt_id == BEETLE_FIVE_DATA):
-                pkt_data = struct.unpack('=BHHHHHHHBI', data)
+                pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
                 
                 self.validate_packet(data)
 
                 self.beetle.total_bytes_received += 12 #Only data bytes
 
                 self.seq_no = pkt_data[-3]
-                if self.beetle.completed_handshake:
-                    self.beetle.send_ack(self.seq_no)
+                # if self.beetle.completed_handshake:
+                #     self.beetle.send_ack(self.seq_no)
 
                 print(f"[yellow]Beetle Five Packet received successfully: {pkt_data}[/yellow]")
 
