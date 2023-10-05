@@ -38,7 +38,7 @@ def parse_commands():
     return args
 
 
-## Wipe contents of <action_name>/<user_name>, to prepare for fresh data collection
+## Wipe all .txt files of <action_name>/<user_name> subfolder, to prepare for fresh data collection
 def wipe(action_name, user_name):
     folder_path = os.path.join(os.getcwd(), DATA_DUMPS_FOLDER_NAME, action_name, user_name)
     files = glob.glob(folder_path + '/*.txt')
@@ -115,12 +115,15 @@ def extract_corresponding_data(sampled_data, sensor):
         processed_line = sampled_data.split(",")
         extracted_reading = processed_line[SENSOR_ENUM[sensor].value]
 
+        # Edge case: GyroZ is of the format '<reading>\n', we don't need the '\n'
+        if (sensor == "GyroZ"):
+            extracted_reading = extracted_reading.rstrip()
+
     return extracted_reading
 
 
 ## Worker process
 def worker(sensor, sampling_window_data, folder_path):
-    assert(len(sampling_window_data) == SAMPLING_WINDOW_SIZE + 1)
     counter = 1
 
     for sampled_data in sampling_window_data:
@@ -167,6 +170,7 @@ if __name__ == "__main__":
     sampling_window_data = []
     pool = Pool(num_physical_cores)
     arduino_dump_file_path = folder_path + '/' + COMMON_ARDUINO_DUMP_FILE_NAME
+    print("Post-processing data, please wait...")
 
     with open(arduino_dump_file_path, 'r') as arduino_dump:
         for line in arduino_dump:
@@ -176,3 +180,5 @@ if __name__ == "__main__":
             if (len(sampling_window_data) == SAMPLING_WINDOW_SIZE+1):
                 pool.starmap(worker, zip(SENSORS, repeat(sampling_window_data), repeat(folder_path)))
                 sampling_window_data = []
+
+    print("Done post-processing")

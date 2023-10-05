@@ -36,11 +36,13 @@
     2. _>****......>......DMP enabled..._
 
 8. You are now ready for data collection. Do the move 'x' amount of times.
-    1. Try to keep 'x' below 100, otherwise post-processing the results might take very long.
+    1. Recommended for 'x' to be ~50. Above that, fatigue sets in and the reading might not be accurate. Post-processing takes longer too.
     
-9. Once you are done collecting data, `Ctrl-C` to stop `collect.py`. You should observe the following output.
+9. Once you are done collecting data, `Ctrl-C` to stop `collect.py`. You should observe the following output in-order...
     1. _Ctrl-C pressed, stopping AI data collection_
     2. _Stopped serial communication with Arduino_
+    3. _Post-processing data, please wait..._
+    4. _Done post-processing_
     
 10. See _Data Format guide_ section for more information on how the data is formatted.
 
