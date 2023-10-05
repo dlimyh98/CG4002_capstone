@@ -10,7 +10,7 @@ from enum import Enum
 
 SERIAL_PORT = '/dev/ttyACM0'
 BAUD_RATE = 9600
-SAMPLING_WINDOW_SIZE = 32
+SAMPLING_WINDOW_SIZE = 40
 DATA_DUMPS_FOLDER_NAME = "data_dumps"
 COMMON_ARDUINO_DUMP_FILE_NAME = 'arduino_dump.txt'
 SENSORS = ["AccX", "AccY", "AccZ", "GyroX", "GyroY", "GyroZ"]

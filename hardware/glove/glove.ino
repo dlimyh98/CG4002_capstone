@@ -20,10 +20,10 @@ const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 6
 #define BAUD_RATE 9600
 #define SPEC_SHEET_DIFFERENCE 2
 #define AVERAGING_COUNTER 500
-#define MOVING_AVERAGE_WINDOW_SIZE 10
-#define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 3
-#define SAMPLING_RATE_FREQUENCY 100
-#define ACCEL_THRESHOLD_FOR_COLLECTION 200
+#define MOVING_AVERAGE_WINDOW_SIZE 2
+#define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 1
+#define SAMPLING_RATE_FREQUENCY 20
+#define ACCEL_THRESHOLD_FOR_COLLECTION 
 
 /************************************** MPU control variables (from Jeff Rowberg) **************************************/
 MPU6050 mpu;
@@ -188,8 +188,8 @@ void send_to_internal_comms() {
 
   // Thresholding (based on Accelerometer values)
   // For undisturbed MPU, absolute summation across AccX,AccY,AccZ (scaled with SPEC_SHEET_DIFFERENCE already) is ~100
-  if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
-    return;
+  //if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
+  //  return;
       
   // Send over to Internal Comms
   //Serial.write(packet);
@@ -386,17 +386,17 @@ void override_sampling_rate_configs() {
   Accelerometer/Gyroscope ------> MPU6050 DMP ------> External
   ***********************/
   register_write(MPU_ADDRESS, SMPRT_DIV, (1000/SAMPLING_RATE_FREQUENCY)-1);   // Accelerometer & Gyroscope Sampling Rate has baseline of 1KHz (if you modify SMPRT_DIV from default)
-  register_write(MPU_ADDRESS, CONFIG, 3);                                     // sets [2:0]DLPF_CFG bits (configures Low-pass filter to below settings)
+  register_write(MPU_ADDRESS, CONFIG, 0);                                     // sets [2:0]DLPF_CFG bits (configures Low-pass filter to below settings)
 
   /********************* Accelerometer *********************/
   // Use serial plotter to determine when movement starts and stop
-  // Sampling frequency = 100Hz
-  // DLPF = 44Hz
+  // Sampling frequency = 50z
+  // DLPF = NIL
   // Delay = 4.9ms
 
   /********************* Gyroscope *********************/
-  // Sampling frequency = 100Hz
-  // DLPF = 44Hz
+  // Sampling frequency = 50Hz
+  // DLPF = NIL
   // Delay = 4.9ms
 }
 
