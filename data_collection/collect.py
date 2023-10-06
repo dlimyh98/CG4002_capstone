@@ -75,9 +75,10 @@ def begin_serial_transmission():
 
     # Don't dump the first two lines (they are MPU initialization messages)
     # Still useful to tell you if MPU managed to connect successfully via Serial
-    print(serial_session.readline().decode("utf-8"))  # "MPU6050 connection successful"
-    print(serial_session.readline().decode("utf-8"))  # ">********......>......DMP enabled..."
-
+    # Although Serial.print on Uno side sends UTF-8, we don't de a decode('utf-8') here.
+    # Reason being that we will need to clear the Serial buffer from previous data collection attempts, which is tricky
+    print(serial_session.readline())
+    print(serial_session.readline())
     return serial_session
 
 
@@ -122,6 +123,19 @@ def extract_corresponding_data(sampled_data, sensor):
     return extracted_reading
 
 
+def verify_arduino_dump(arduino_dump_file_path):
+    line_counter = 1
+
+    with open(arduino_dump_file_path, 'r') as arduino_dump:
+        for line in arduino_dump:
+            processed_line = line.split(",")
+
+            if (processed_line[0] != 'E\n' and len(processed_line) != 6):
+                print(("ERROR DETECTED AT LINE {line_number} , DOES NOT HAVE SIX READINGS").format(line_number = line_counter))
+
+            line_counter += 1
+        
+
 ## Worker process
 def worker(sensor, sampling_window_data, folder_path):
     counter = 1
@@ -151,7 +165,7 @@ if __name__ == "__main__":
     user_name = args.n[0]
 
     ## Determine num PHYSICAL cores (for parallelizing work later)
-    num_physical_cores = determine_num_physical_cores()
+    #num_physical_cores = determine_num_physical_cores()
 
     ## Wipe out <action_name>/<user_name> subfolder, to prepare for fresh data collection
     folder_path = wipe(action_name, user_name)
@@ -165,8 +179,12 @@ if __name__ == "__main__":
     ## Dump Serial.prints() from Uno into .txt file
     dump_arduino_output(folder_path)
 
+    ## Verify we get 6 readings per line
+    verify_arduino_dump(folder_path + '/' + COMMON_ARDUINO_DUMP_FILE_NAME)
+
     ############################################## PARALLEL WORK ##############################################
     # Read arduino_dump.txt ---> Fill up Sampling Window ---> Send out Sampling Window to 6 parallel processes
+    '''
     sampling_window_data = []
     pool = Pool(num_physical_cores)
     arduino_dump_file_path = folder_path + '/' + COMMON_ARDUINO_DUMP_FILE_NAME
@@ -182,3 +200,4 @@ if __name__ == "__main__":
                 sampling_window_data = []
 
     print("Done post-processing")
+    '''
