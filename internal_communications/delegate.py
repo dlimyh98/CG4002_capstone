@@ -24,6 +24,7 @@ class MyDelegate(btle.DefaultDelegate):
         self.packet_buffer = b""
         self.seq_no = 0
         self.crc_fail_count = 0
+        self.first_crc_fail_time = 0
 
     def handleNotification(self, cHandle, data):
         # Append data to buffer
@@ -95,7 +96,8 @@ class MyDelegate(btle.DefaultDelegate):
                 print(f"[purple]Beetle Four Packet received successfully: {pkt_data}[/purple]")
                 
                 data_manager.put_data(pkt_id, data)
-            # Simulate stop n wait
+           
+            # Glove Beetle 1
             elif (pkt_id == BEETLE_FIVE_DATA):
                 pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
                 
@@ -170,6 +172,13 @@ class MyDelegate(btle.DefaultDelegate):
             return
 
         else:
+            if self.first_crc_fail_time - time.time() > 10:
+                self.first_crc_fail_time = 0
+                self.crc_fail_count = 0
+
+            if self.crc_fail_count == 0:
+                self.first_crc_fail_time = time.time()
+            
             self.crc_fail_count += 1
         
             if self.crc_fail_count > MAX_FAIL_COUNT:
