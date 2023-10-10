@@ -1,0 +1,16 @@
+1. fist
+2. fist
+3. spider web
+4. reload
+5. shield
+6. hammer
+7. spider web
+8. portal
+9. shield
+10. grenade
+11. reload
+12. spear
+13. fist
+14. grenade
+15. portal
+16. hammer
