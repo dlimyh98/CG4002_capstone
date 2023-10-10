@@ -4,6 +4,7 @@ from rich import print
 from errors import MaxCRCFailureError
 import time
 from data_manager import DataManager
+import logging
 
 ACK = 1
 BEETLE_ONE_DATA=2
@@ -12,7 +13,7 @@ BEETLE_THREE_DATA=4
 BEETLE_FOUR_DATA=5 # Gun Beetle 1
 BEETLE_FIVE_DATA=6
 BEETLE_SIX_DATA=7 # Gun Beetle 2
-MAX_FAIL_COUNT = 10
+MAX_FAIL_COUNT = 5
 
 data_manager = DataManager()
 
@@ -113,7 +114,7 @@ class MyDelegate(btle.DefaultDelegate):
                     #     self.beetle.send_ack(self.seq_no)
 
                     print(f"[yellow]Beetle Five Packet received successfully: {pkt_data}[/yellow]")
-                    print(f"Packet 5 data: {data}")
+                    logging.debug(f"Packet 5 data: {data}")
                     data_manager.put_data(pkt_id, data)
 
             # Gun Beetle 2 No ack
