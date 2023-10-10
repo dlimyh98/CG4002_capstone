@@ -159,6 +159,7 @@ class BeetleDevice:
         self.completed_handshake = False
 
     def reconnect(self, retry_delay=5):
+        retry_count = 1
         while(True):
             try:
                 print(f"Attempting to reconnect to device {self.address}...")
@@ -169,7 +170,9 @@ class BeetleDevice:
             
             except btle.BTLEException as e:
                 print(f"Reconnection attempt failed: {e}")
-                time.sleep(retry_delay)
+                retry_count += 1
+                time.sleep(retry_delay * retry_count) 
+                # time.sleep(retry_delay)
         
     def receive_data(self, polling_interval=1, duration=10000000000):
         self.total_bytes_received = 0
