@@ -15,7 +15,7 @@ VERIFIED = "v"
 
 class BeetleDevice:
 
-    def __init__(self, address, service_uuid, characteristic_uuid, name):
+    def __init__(self, address, service_uuid, characteristic_uuid, name, global_queue):
         self.address = address
         self.service_uuid = service_uuid
         self.characteristic_uuid = characteristic_uuid
@@ -37,6 +37,8 @@ class BeetleDevice:
         self.handshake_replied = False  
         self.completed_handshake = False
         self.is_pressed = False
+
+        self.send_queue = global_queue
 
     def beetle_handler(self):
 
@@ -79,7 +81,7 @@ class BeetleDevice:
         """
         try:
             device = btle.Peripheral(self.address)
-            self.delegate = MyDelegate(self)
+            self.delegate = MyDelegate(self, self.send_queue)
             device.setDelegate(self.delegate)
             self.device=device
             self.verify_serviceuuid()

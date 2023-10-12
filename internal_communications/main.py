@@ -1,7 +1,10 @@
 # COMMAND: sudo -E env "PATH=$PATH" /home/yitching/capstone/testingEnv/bin/python /home/yitching/capstone/CG4002_capstone/internal_communications/main.py
-import threading
-from device import BeetleDevice
 import logging
+import threading
+import asyncio
+import queue
+from laptop_relay_node import LaptopClient
+from device import BeetleDevice
 
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG, 
@@ -20,18 +23,52 @@ beetle_devices = [
     {"address": "D0:39:72:E4:80:9F", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "g"}, # Gun Beetle 2
 ]
 
+HOSTNAME = "172.25.110.74"
+REMOTE_BIND_PORT = 8080
 
+class BeetleMain(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.global_queue = queue.Queue()
+        self.relay_node = LaptopClient(HOSTNAME, REMOTE_BIND_PORT)
+        self.beetle_threads = []
+
+
+    # instantiate Beetles, Relay Node, and the pipeline
+    def run(self):
+        self.spawn_beetle_threads()
+        self.relay_node.start()
+
+        # Wait for the event to signal that the loop is ready
+        self.relay_node.loop_ready.wait()
+
+        # run LaptopClient's async start method
+        # loop = asyncio.get_event_loop()
+        loop = self.relay_node.loop
+        # loop.run_until_complete(self.relay_node.async_start())
+        asyncio.run_coroutine_threadsafe(self.relay_node.async_start(), loop)
+
+        print("Starting redirect_Beetle_To_RelayNode...")
+        self.redirect_Beetle_To_RelayNode()        
+    
+    def redirect_Beetle_To_RelayNode(self):
+        while True:
+            data = self.global_queue.get()
+            print(f"Data taken: {data} | Queue Size After Taking: {self.global_queue.qsize()}")
+            asyncio.run_coroutine_threadsafe(self.relay_node.enqueue_data(data), self.relay_node.loop)
+            print(f"Data transferred: {data}")
+
+    def spawn_beetle_threads(self):
+        for device_info in beetle_devices:
+            beetle = BeetleDevice(device_info["address"], device_info["service_uuid"], device_info["characteristic_uuid"], device_info["name"], self.global_queue)
+            thread = threading.Thread(target=beetle.beetle_handler)
+            self.beetle_threads.append(thread)
+            thread.start()
+        
 def main():
-    beetle_threads = []
+    beetle = BeetleMain()
+    beetle.start()
+    beetle.join()
 
-    for device_info in beetle_devices:
-        beetle = BeetleDevice(device_info["address"], device_info["service_uuid"], device_info["characteristic_uuid"], device_info["name"])
-        thread = threading.Thread(target=beetle.beetle_handler)
-        beetle_threads.append(thread)
-        thread.start()
-
-    for thread in beetle_threads:
-        thread.join()
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

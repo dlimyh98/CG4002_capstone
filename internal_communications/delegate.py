@@ -19,7 +19,7 @@ data_manager = DataManager()
 
 class MyDelegate(btle.DefaultDelegate):
    
-    def __init__(self, beetle_device):
+    def __init__(self, beetle_device, send_queue):
         btle.DefaultDelegate.__init__(self)
         self.count = 0
         self.beetle = beetle_device
@@ -29,6 +29,7 @@ class MyDelegate(btle.DefaultDelegate):
         self.first_crc_fail_time = 0
         self.received_crc_int = 0
         self.calculated_crc = 0
+        self.send_queue = send_queue
 
     def handleNotification(self, cHandle, data):
         # Append data to buffer
@@ -61,7 +62,7 @@ class MyDelegate(btle.DefaultDelegate):
 
                     print(f"[red] Beetle One Packet received successfully: {pkt_data}[/red]")
 
-                    data_manager.put_data(pkt_id, data)
+                    # data_manager.put_data(pkt_id, data)
 
             elif (pkt_id == BEETLE_TWO_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
@@ -75,7 +76,7 @@ class MyDelegate(btle.DefaultDelegate):
 
                     print(f"[red] Beetle Two Packet received successfully: {pkt_data}[/red]")
 
-                    data_manager.put_data(pkt_id, data)
+                    # data_manager.put_data(pkt_id, data)
 
             elif (pkt_id == BEETLE_THREE_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
@@ -86,7 +87,7 @@ class MyDelegate(btle.DefaultDelegate):
                     
                     print(f"[blue] Beetle Three Packet received successfully: {pkt_data}[/blue]")
 
-                    data_manager.put_data(pkt_id, data)
+                    # data_manager.put_data(pkt_id, data)
 
             # Gun Beetle 1 No Ack
             elif (pkt_id == BEETLE_FOUR_DATA):
@@ -99,7 +100,7 @@ class MyDelegate(btle.DefaultDelegate):
                     self.seq_no = pkt_data[-3]
 
                     print(f"[purple]Beetle Four Packet received successfully: {pkt_data}[/purple]")
-                    data_manager.put_data(pkt_id, data)
+                    # data_manager.put_data(pkt_id, data)
            
             # Glove Beetle 1
             elif (pkt_id == BEETLE_FIVE_DATA):
@@ -115,7 +116,8 @@ class MyDelegate(btle.DefaultDelegate):
 
                     print(f"[yellow]Beetle Five Packet received successfully: {pkt_data}[/yellow]")
                     logging.debug(f"Packet 5 data: {data}")
-                    data_manager.put_data(pkt_id, data)
+                    self.send_queue.put(data)
+                    # data_manager.put_data(pkt_id, data)
 
             # Gun Beetle 2 No ack
             elif (pkt_id == BEETLE_SIX_DATA):
@@ -126,10 +128,11 @@ class MyDelegate(btle.DefaultDelegate):
                     self.beetle.total_bytes_received += 2 #Only data bytes
                     self.seq_no = pkt_data[-3]
 
-                    print(f"[blue]Beetle Six Packet received successfully: {pkt_data}[/blue]")
+                    logging.info(f"[blue]Beetle Six Packet received successfully: {pkt_data}[/blue]")
 
-                    data_manager.put_data(pkt_id, data)
-
+                    self.send_queue.put(data)
+                    print(f"from beetle:{self.send_queue.qsize()}")
+                    
             elif (pkt_id == ACK):
                 # added
                 if(self.validate_packet(data)):
@@ -172,6 +175,7 @@ class MyDelegate(btle.DefaultDelegate):
         self.received_crc_int = struct.unpack("I", packet[16:])[0]
         self.calculated_crc = self.custom_crc32(packet[:-4])
         if(self.received_crc_int == self.calculated_crc):
+            self.crc_fail_count = 0
             return True
 
         else:
@@ -180,12 +184,12 @@ class MyDelegate(btle.DefaultDelegate):
             print(f"Received {self.received_crc_int}")
             print(f"Received data packet: {packet[:-4]}")
             print(f"Calculated {self.calculated_crc}")
-            if time.time() - self.first_crc_fail_time > 3:
-                self.first_crc_fail_time = 0
-                self.crc_fail_count = 0
+            # if time.time() - self.first_crc_fail_time > 3:
+            #     self.first_crc_fail_time = 0
+            #     self.crc_fail_count = 0
 
-            if self.crc_fail_count == 0:
-                self.first_crc_fail_time = time.time()
+            # if self.crc_fail_count == 0:
+            #     self.first_crc_fail_time = time.time()
             
             self.crc_fail_count += 1
         
