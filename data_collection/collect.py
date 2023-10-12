@@ -100,7 +100,7 @@ def dump_arduino_output(folder_path):
             # Include the 'E' terminating character as well
             if (packet_counter == SAMPLING_WINDOW_SIZE):
                 packet_counter = 1
-                arduino_dump.write("E\n")
+                #arduino_dump.write("E\n")
             else:
                 packet_counter += 1
 
@@ -130,7 +130,7 @@ def verify_arduino_dump(arduino_dump_file_path):
         for line in arduino_dump:
             processed_line = line.split(",")
 
-            if (processed_line[0] != 'E\n' and len(processed_line) != 6):
+            if (len(processed_line) != 6):
                 print(("ERROR DETECTED AT LINE {line_number} , DOES NOT HAVE SIX READINGS").format(line_number = line_counter))
 
             line_counter += 1

@@ -1,7 +1,13 @@
 # COMMAND: sudo -E env "PATH=$PATH" /home/yitching/capstone/testingEnv/bin/python /home/yitching/capstone/CG4002_capstone/internal_communications/main.py
-
 import threading
 from device import BeetleDevice
+import logging
+
+# Set up logging configuration
+logging.basicConfig(level=logging.DEBUG, 
+                    format='%(asctime)s - %(levelname)s - %(message)s', 
+                    filename='app.log',
+                    filemode='w')
 
 service_uuid = "0000dfb0-0000-1000-8000-00805f9b34fb"
 characteristic_uuid = "0000dfb1-0000-1000-8000-00805f9b34fb"  # Replace with the UUID of your characteristic

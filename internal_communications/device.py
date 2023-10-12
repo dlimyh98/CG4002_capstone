@@ -4,6 +4,7 @@ from queue import Queue
 import time
 import keyboard
 from rich import print
+import logging
 
 from states import States
 from delegate import MyDelegate
@@ -83,16 +84,16 @@ class BeetleDevice:
             self.device=device
             self.verify_serviceuuid()
             self.characteristic = self.service.getCharacteristics(self.characteristic_uuid)[0]
-            print(f"Connected to Beetle module at address {self.address}")
+            logging.info(f"Connected to Beetle module at address {self.address}")
             self.state = States.HANDSHAKING
 
         except btle.BTLEException as e:
-            print(f"Connection to {self.address} failed:", e)
+            logging.info(f"Connection to {self.address} failed: {e}")
             self.state = States.DISCONNECTED
             return
         
         except Exception as e:
-            print(f"Error: {e}")
+            logging.error(f"Error: {e}")
             self.state = States.DISCONNECTED
             return
         
@@ -102,7 +103,7 @@ class BeetleDevice:
             self.state = States.CONNECTED
         
         except btle.BTLEException as e:
-            print(f"Service with UUID {self.service_uuid} found", e)
+            logging.error(f"Service with UUID {self.service_uuid} found", e)
             self.state = States.DISCONNECTED
 
     def initiate_handshake(self, data="h"): 
@@ -141,7 +142,7 @@ class BeetleDevice:
 
     def handshake(self, timeout=3):
         self.start_time = time.time()
-        print("Initiating Handshake")
+        logging.info("Initiating Handshake")
         self.initiate_handshake()
 
         while True:
@@ -149,7 +150,7 @@ class BeetleDevice:
                 break
 
             if time.time() - self.start_time > timeout:
-                print("Handshake Timeout")
+                logging.info("Handshake Timeout")
                 raise btle.BTLEException(message="Handshake Timeout")  
 
         self.complete_handshake()
@@ -159,17 +160,20 @@ class BeetleDevice:
         self.completed_handshake = False
 
     def reconnect(self, retry_delay=5):
+        retry_count = 1
         while(True):
             try:
-                print(f"Attempting to reconnect to device {self.address}...")
+                logging.info(f"Attempting to reconnect to device {self.address}...")
                 self.device.disconnect()  # Disconnect if previously connected
                 self.state = States.DISCONNECTED
                 self.connect_to_beetle()  # Attempt to reconnect
                 return
             
             except btle.BTLEException as e:
-                print(f"Reconnection attempt failed: {e}")
-                time.sleep(retry_delay)
+                logging.info(f"Reconnection attempt failed: {e}")
+                retry_count += 1
+                time.sleep(retry_delay * retry_count) 
+                # time.sleep(retry_delay)
         
     def receive_data(self, polling_interval=1, duration=10000000000):
         self.total_bytes_received = 0
@@ -182,8 +186,8 @@ class BeetleDevice:
 
         elapsed_time = time.time() - self.start_time
         receiving_speed_kbps = (self.total_bytes_received * 8) / 1024 / elapsed_time
-        print(f"Receiving Speed: {receiving_speed_kbps:.2f} kbps")
-        print(f"Number of fragmented packets per minute: {self.fragmented_packet_count}")
+        logging.info(f"Receiving Speed: {receiving_speed_kbps:.2f} kbps")
+        logging.info(f"Number of fragmented packets per minute: {self.fragmented_packet_count}")
 
     # future use if packets cannot be dropped
     def send_ack(self, seq_no):
@@ -194,10 +198,10 @@ class BeetleDevice:
             # Write the byte to the characteristic with response
             self.characteristic.write(seq_no_byte)
             
-            print(f"ACK sent for sequence number: {seq_no}")
+            logging.info(f"ACK sent for sequence number: {seq_no}")
 
         except btle.BTLEException as e:
-            print(f"Failed to send ACK: {e}")
+            logging.info(f"Failed to send ACK: {e}")
 
     def send_ext(self, debounce_interval=10, bullet_key = "space"):
         try:
@@ -209,11 +213,11 @@ class BeetleDevice:
             
             if self.is_pressed:
                 # Send 'g' to Arduino
-                print("Entered")
+                logging.debug("Entered")
                 encrypted_data = 'g'.encode('utf-8')
                 self.characteristic.write(encrypted_data)
                 time.sleep(1)
-                print("Sleeping")
+                logging.debug("Sleeping")
                 # Simulate getting the updated bullet count from somewhere
                 self.updated_bullet_count += 1  # Change this to the actual bullet count
                 bullet_count_bytes = struct.pack('B', self.updated_bullet_count)
@@ -226,4 +230,4 @@ class BeetleDevice:
 
         except Exception as e:
             self.is_pressed = False
-            print(f"Error in send_ext: {e}")
+            logging.error(f"Error in send_ext: {e}")
