@@ -210,6 +210,7 @@ class BeetleDevice:
         # Assume format ("b", 6)
         try:
             current_data = receive_queue.get_nowait()
+            print(f"Send Ext:{current_data}")
             data_type, data_content = current_data[0], current_data[1]
             # data_type = "b"
             # self.updated_bullet_count = self.updated_bullet_count - 1
