@@ -33,31 +33,19 @@ possible_actions = ["gun", "shield", "grenade", "reload", "web",
 
 
 class LaptopClient(threading.Thread):
-    def __init__(self, hostname, remote_port):
+    def __init__(self, hostname, remote_port, loop):
         super().__init__()
         self.hostname = hostname
         self.remote_port = remote_port      
         self.send_queue = asyncio.Queue()
         self.receive_queue = asyncio.Queue()
         self.is_connected = False
-        self.loop = None
-        self.loop_ready = threading.Event()
+        self.loop = loop
 
     def run(self):
-        self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.loop_ready.set()
-        
-        # Connect first
         self.loop.run_until_complete(self.async_start())
-        
-        # Now run the message handling tasks
-        try:
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            self.loop.close()
+        self.loop.run_forever()
 
     async def send_message(self, writer):
         while self.is_connected:
