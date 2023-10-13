@@ -53,25 +53,25 @@ class BeetleMain(threading.Thread):
         while True:
             try:
                 data = self.send_queue.get()
-                print(f"Data taken: {data} | Queue Size After Taking: {self.send_queue.qsize()}")
+                # print(f"Data taken: {data} | Queue Size After Taking: {self.send_queue.qsize()}")
                 asyncio.run_coroutine_threadsafe(self.relay_node.enqueue_data(data), self.loop)
-                print(f"Data transferred: {data}")
+                # print(f"Data transferred: {data}")
             except Exception as e:
                 print("Exception beetle to relay node: ", e)
 
     def redirect_RelayNode_To_Beetle(self):
-        # while True:
-        try:
-            # print(self.loop.is_running())
-            future = asyncio.run_coroutine_threadsafe(self.relay_node.dequeue_data(), self.loop)
-            data = future.result()
-            # send data to beetle
-            print(f"Data received: {data} | Queue Size After Taking: {self.relay_node.receive_queue.qsize()}")
-            self.receive_queue.put(data)
-            print(f"Data received: {data}")
+        while True:
+            try:
+                # print(self.loop.is_running())
+                future = asyncio.run_coroutine_threadsafe(self.relay_node.dequeue_data(), self.loop)
+                data = future.result()
+                # send data to beetle
+                print(f"Data received: {data} | Queue Size After Taking: {self.relay_node.receive_queue.qsize()}")
+                self.receive_queue.put(data)
+                print(f"Data received: {data}")
 
-        except Exception as e:
-            print("Exeception: ", e)
+            except Exception as e:
+                print("Exeception: ", e)
 
     def spawn_beetle_threads(self):
         for device_info in beetle_devices:

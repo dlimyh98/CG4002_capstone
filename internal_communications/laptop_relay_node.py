@@ -51,7 +51,7 @@ class LaptopClient(threading.Thread):
         while self.is_connected:
             try:
                 message = self.send_queue.get_nowait()
-                print(f"Relay Node: {message}")
+                # print(f"Relay Node: {message}")
                 str_message = ",".join(map(str, message))
                 writer.write(str_message.encode("utf8"))
                 await writer.drain()
@@ -112,14 +112,14 @@ class LaptopClient(threading.Thread):
                 user_input = await loop.run_in_executor(None, input, ("Enter something to send tuple to beetles:"))
                 message = self.create_dummy_beetle_data()
                 if message:
-                    print(message)
+                    # print(message)
                     await self.receive_queue.put(message)
                     print(self.receive_queue.qsize())
             except Exception as e:
                 print(f"Error while getting user input: {e}")
     
     def create_dummy_beetle_data(self):
-        return ('b', 4)
+        return ('b', 2)
 
     # async def get_user_input(self):
     #     loop = asyncio.get_event_loop()  # Get the loop reference once

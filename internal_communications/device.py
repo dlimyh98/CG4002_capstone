@@ -209,22 +209,27 @@ class BeetleDevice:
         # If received message meant for gun beetles i..e., bullet count
         # Assume format ("b", 6)
         try:
-            current_data = receive_queue.get_nowait()
+
+            if receive_queue.empty():
+                return
+            
+            # check what data it is
+            current_data = receive_queue.queue[0]
+            # current_data = receive_queue.get_nowait()
             logging.info(f"Send Ext:{current_data}")
             data_type, data_content = current_data[0], current_data[1]
             # data_type = "b"
             # self.updated_bullet_count = self.updated_bullet_count - 1
             # If update to bullet count
-            if data_type == "b":
-                if beetle_device_id == "b4" or beetle_device_id == "b6":
-                    # Send "send data flag" to arduino
-                    encrypted_flag = 'g'.encode('utf-8')
+            if data_type == "b" and beetle_device_id in ["b4", "b6"]:
+                    receive_queue.get_nowait()  # remove data from queue
+                    encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
                     self.characteristic.write(encrypted_flag)
                     encrypted_updated_bullet_count = struct.pack('B', data_content)
                     self.characteristic.write(encrypted_updated_bullet_count)
             # If update to health
-            if data_type == "h":
-                if beetle_device_id == "b3" or beetle_device_id == "b2":
+            if data_type == "h" and beetle_device_id in ["b3", "b2"]:
+                    receive_queue.get_nowait()
                     encrypted_flag = 'g'.encode('utf-8')
                     self.characteristic.write(encrypted_flag)
                     encrypted_updated_health = struct.pack('B', data_content)
