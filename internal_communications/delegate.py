@@ -4,6 +4,7 @@ from rich import print
 from errors import MaxCRCFailureError
 import time
 from data_manager import DataManager
+from data_collector import DataCollector
 import logging
 
 ACK = 1
@@ -33,6 +34,8 @@ class MyDelegate(btle.DefaultDelegate):
         self.receive_queue = receive_queue
         self.last_received_time = 0
         self.receive_interval = 2
+        
+        self.data_collector = DataCollector("Yit Ching", "test")
 
     def handleNotification(self, cHandle, data):
         # Append data to buffer
@@ -69,6 +72,7 @@ class MyDelegate(btle.DefaultDelegate):
                     self.beetle.total_bytes_received += 9 #Only data bytes
                     print(f"[red] Beetle One Packet received successfully: {pkt_data}[/red]")
                     self.send_queue.put(data)
+                    self.data_collector.store_data(pkt_data[1:7])
                     # data_manager.put_data(pkt_id, data)
 
             elif (pkt_id == BEETLE_TWO_DATA):
