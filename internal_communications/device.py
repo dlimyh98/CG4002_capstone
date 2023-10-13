@@ -2,7 +2,6 @@ import struct
 from bluepy import btle
 from queue import Queue
 import time
-import keyboard
 from rich import print
 import logging
 
@@ -15,7 +14,7 @@ VERIFIED = "v"
 
 class BeetleDevice:
 
-    def __init__(self, address, service_uuid, characteristic_uuid, name, global_queue):
+    def __init__(self, address, service_uuid, characteristic_uuid, name, send_queue, receive_queue):
         self.address = address
         self.service_uuid = service_uuid
         self.characteristic_uuid = characteristic_uuid
@@ -32,13 +31,14 @@ class BeetleDevice:
         self.characteristic = None
         self.total_bytes_received = 0
         self.fragmented_packet_count = 0
-        self.updated_bullet_count = 0
+        self.updated_bullet_count = 6
 
         self.handshake_replied = False  
         self.completed_handshake = False
         self.is_pressed = False
 
-        self.send_queue = global_queue
+        self.send_queue = send_queue
+        self.receive_queue = receive_queue
 
     def beetle_handler(self):
 
@@ -81,7 +81,7 @@ class BeetleDevice:
         """
         try:
             device = btle.Peripheral(self.address)
-            self.delegate = MyDelegate(self, self.send_queue)
+            self.delegate = MyDelegate(self, self.send_queue, self.receive_queue)
             device.setDelegate(self.delegate)
             self.device=device
             self.verify_serviceuuid()
@@ -105,7 +105,7 @@ class BeetleDevice:
             self.state = States.CONNECTED
         
         except btle.BTLEException as e:
-            logging.error(f"Service with UUID {self.service_uuid} found", e)
+            logging.error(f"Service with UUID {self.service_uuid} found {e}")
             self.state = States.DISCONNECTED
 
     def initiate_handshake(self, data="h"): 
@@ -205,31 +205,30 @@ class BeetleDevice:
         except btle.BTLEException as e:
             logging.info(f"Failed to send ACK: {e}")
 
-    def send_ext(self, debounce_interval=10, bullet_key = "space"):
+    def send_ext(self, beetle_device_id, receive_queue):
+        # If received message meant for gun beetles i..e., bullet count
+        # Assume format ("b", 6)
         try:
-            start_press = 0
-
-            if keyboard.is_pressed(bullet_key) and not self.is_pressed:
-                start_press = time.time()
-                self.is_pressed = True
-            
-            if self.is_pressed:
-                # Send 'g' to Arduino
-                logging.debug("Entered")
-                encrypted_data = 'g'.encode('utf-8')
-                self.characteristic.write(encrypted_data)
-                time.sleep(1)
-                logging.debug("Sleeping")
-                # Simulate getting the updated bullet count from somewhere
-                self.updated_bullet_count += 1  # Change this to the actual bullet count
-                bullet_count_bytes = struct.pack('B', self.updated_bullet_count)
+            current_data = receive_queue.get()
+            data_type, data_content = current_data[0], current_data[1]
+            # data_type = "b"
+            # self.updated_bullet_count = self.updated_bullet_count - 1
+            # If update to bullet count
+            if data_type == "b":
+                if beetle_device_id == "b4" or beetle_device_id == "b6":
+                    # Send "send data flag" to arduino
+                    encrypted_flag = 'g'.encode('utf-8')
+                    self.characteristic.write(encrypted_flag)
+                    encrypted_updated_bullet_count = struct.pack('B', data_content)
+                    self.characteristic.write(encrypted_updated_bullet_count)
+            # If update to health
+            if data_type == "h":
+                if beetle_device_id == "b3":
+                    encrypted_flag = 'g'.encode('utf-8')
+                    self.characteristic.write(encrypted_flag)
+                    encrypted_updated_health = struct.pack('B', data_content)
+                    self.characteristic.write(encrypted_updated_health)
                 
-                # Send the bullet count to Arduino without waiting for acknowledgment
-                self.characteristic.write(bullet_count_bytes)
-
-                # Reset the flag
-                self.is_pressed = False
-
         except Exception as e:
-            self.is_pressed = False
-            logging.error(f"Error in send_ext: {e}")
+            print(f"No data retrieved, {e}")
+

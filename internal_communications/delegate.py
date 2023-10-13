@@ -19,7 +19,7 @@ data_manager = DataManager()
 
 class MyDelegate(btle.DefaultDelegate):
    
-    def __init__(self, beetle_device, send_queue):
+    def __init__(self, beetle_device, send_queue, receive_queue):
         btle.DefaultDelegate.__init__(self)
         self.count = 0
         self.beetle = beetle_device
@@ -30,6 +30,9 @@ class MyDelegate(btle.DefaultDelegate):
         self.received_crc_int = 0
         self.calculated_crc = 0
         self.send_queue = send_queue
+        self.receive_queue = receive_queue
+        self.last_received_time = 0
+        self.receive_interval = 2
 
     def handleNotification(self, cHandle, data):
         # Append data to buffer
@@ -47,7 +50,8 @@ class MyDelegate(btle.DefaultDelegate):
             # reset buffer to remaining bytes
         
         if self.beetle.completed_handshake:
-            self.beetle.send_ext()
+            if time.time() - self.last_received_time > self.receive_interval:
+                self.beetle.send_ext(self.beetle.name, self.receive_queue)
 
     def process_packet(self, data):
         self.count +=1
@@ -128,7 +132,7 @@ class MyDelegate(btle.DefaultDelegate):
                     self.beetle.total_bytes_received += 2 #Only data bytes
                     self.seq_no = pkt_data[-3]
 
-                    logging.info(f"[blue]Beetle Six Packet received successfully: {pkt_data}[/blue]")
+                    print(f"[blue]Beetle Six Packet received successfully: {pkt_data}[/blue]")
 
                     self.send_queue.put(data)
                     print(f"from beetle:{self.send_queue.qsize()}")
