@@ -38,6 +38,7 @@ class LaptopClient(threading.Thread):
         self.hostname = hostname
         self.remote_port = remote_port      
         self.send_queue = asyncio.Queue()
+        self.receive_queue = asyncio.Queue()
         self.is_connected = False
         self.loop = None
         self.loop_ready = threading.Event()
@@ -87,8 +88,14 @@ class LaptopClient(threading.Thread):
                 self.is_connected = True
                 
                 # Start the tasks after connecting
-                asyncio.create_task(self.send_message(writer))
-                asyncio.create_task(self.receive_message(reader))
+                # asyncio.create_task(self.send_message(writer))
+                # asyncio.create_task(self.receive_message(reader))
+
+                asyncio.gather(
+                    asyncio.create_task(self.send_message(writer)),
+                    asyncio.create_task(self.receive_message(reader)),
+                    asyncio.create_task(self.get_user_input())
+                )
 
             except ConnectionRefusedError:
                 print(f"Connection to Relay Node Server at {self.hostname}:{self.remote_port} failed. Retrying in 5 seconds...")
@@ -100,6 +107,53 @@ class LaptopClient(threading.Thread):
 
     async def enqueue_data(self, data):
         await self.send_queue.put(data)
+    
+    async def dequeue_data(self):
+        await self.receive_queue.get()
+
+    async def send_kb_input_to_beetle(self):
+        loop = asyncio.get_event_loop()
+        while self.is_connected:
+            try:
+                user_input = await loop.run_in_executor(None, input, ("Enter something to send tuple to beetles:"))
+                message = self.create_dummy_beetle_data(user_input)
+                if message:
+                    await self.receive_queue.put(message)
+            except Exception as e:
+                print(f"Error while getting user input: {e}")
+    
+    def create_dummy_beetle_data(self):
+        return ('b', 1)
+
+    # async def get_user_input(self):
+    #     loop = asyncio.get_event_loop()  # Get the loop reference once
+    #     while self.is_connected:
+    #         try:
+    #             user_input = await loop.run_in_executor(None, input, "Enter something to send a dummy packet:")
+                
+    #             # Assuming create_dummy_data is a method that processes the user input 
+    #             # and returns the desired message format for sending.
+    #             message = self.create_dummy_data(user_input)
+    #             if message:  # Only put the message in the queue if it's valid
+    #                 await self.send_queue.put(message)
+    #         except Exception as e:
+    #             print(f"Error while getting user input or processing it: {e}")
+
+    # def create_dummy_data(self, input):
+    #     if input == "stop":
+    #         return json.dumps("stop")
+        
+    #     if input == "grenade":
+    #         action = "grenade"
+    #     else:
+    #         action = random.choice(possible_actions)
+
+    #     dummy_data = {
+    #         "player_id": 1,
+    #         "action": action,
+    #         "game_state": game_state_dict
+    #     }
+    #     return json.dumps(dummy_data)
 
 
     # async def start(self):

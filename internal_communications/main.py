@@ -3,6 +3,7 @@ import logging
 import threading
 import asyncio
 import queue
+import concurrent.futures
 from laptop_relay_node import LaptopClient
 from device import BeetleDevice
 
@@ -50,13 +51,24 @@ class BeetleMain(threading.Thread):
         asyncio.run_coroutine_threadsafe(self.relay_node.async_start(), loop)
 
         print("Starting redirect_Beetle_To_RelayNode...")
-        self.redirect_Beetle_To_RelayNode()        
+        self.redirect_Beetle_To_RelayNode()   
+        self.redirect_RelayNode_To_Beetle()     
     
     def redirect_Beetle_To_RelayNode(self):
         while True:
             data = self.send_queue.get()
             print(f"Data taken: {data} | Queue Size After Taking: {self.send_queue.qsize()}")
             asyncio.run_coroutine_threadsafe(self.relay_node.enqueue_data(data), self.relay_node.loop)
+            print(f"Data transferred: {data}")
+
+    def redirect_RelayNode_To_Beetle(self):
+        while True:
+            loop = self.relay_node.loop
+            future = asyncio.run_coroutine_threadsafe(self.relay_node.dequeue_data(), loop)
+            data = future.result()
+
+            # send data to beetle
+            self.receive_queue.put(data)
             print(f"Data transferred: {data}")
 
     def spawn_beetle_threads(self):
