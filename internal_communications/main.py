@@ -23,8 +23,8 @@ beetle_devices = [
     {"address": "C4:BE:84:20:19:73", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b5"}, # Glove Beetle 1
     {"address": "D0:39:72:E4:80:9F", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b6"}, # Gun Beetle 2
 ]
-
-HOSTNAME = "192.168.254.192"
+19
+HOSTNAME = "127.0.0.1"
 REMOTE_BIND_PORT = 8080
 
 class BeetleMain(threading.Thread):

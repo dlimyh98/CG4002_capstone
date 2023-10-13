@@ -80,14 +80,14 @@ class LaptopClient(threading.Thread):
                 self.is_connected = True
                 
                 # Start the tasks after connecting
-                asyncio.create_task(self.send_message(writer))
-                asyncio.create_task(self.receive_message(reader))
+                # asyncio.create_task(self.send_message(writer))
+                # asyncio.create_task(self.receive_message(reader))
 
-                # await asyncio.gather(
-                #     asyncio.create_task(self.send_message(writer)),
-                #     asyncio.create_task(self.receive_message(reader)),
-                #     asyncio.create_task(self.send_kb_input_to_beetle())
-                # )
+                await asyncio.gather(
+                    asyncio.create_task(self.send_message(writer)),
+                    asyncio.create_task(self.receive_message(reader)),
+                    asyncio.create_task(self.send_kb_input_to_beetle())
+                )
 
             except ConnectionRefusedError:
                 print(f"Connection to Relay Node Server at {self.hostname}:{self.remote_port} failed. Retrying in 5 seconds...")
@@ -119,7 +119,7 @@ class LaptopClient(threading.Thread):
                 print(f"Error while getting user input: {e}")
     
     def create_dummy_beetle_data(self):
-        return ('b', 2)
+        return ('b', 4)
 
     # async def get_user_input(self):
     #     loop = asyncio.get_event_loop()  # Get the loop reference once
