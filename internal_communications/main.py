@@ -50,9 +50,12 @@ class BeetleMain(threading.Thread):
         # loop.run_until_complete(self.relay_node.async_start())
         asyncio.run_coroutine_threadsafe(self.relay_node.async_start(), loop)
 
+        outgoingThread = threading.Thread(target=self.redirect_Beetle_To_RelayNode())
+        incomingThread = threading.Thread(target=self.redirect_RelayNode_To_Beetle())
+        outgoingThread.start()
         print("Starting redirect_Beetle_To_RelayNode...")
-        self.redirect_Beetle_To_RelayNode()   
-        self.redirect_RelayNode_To_Beetle()     
+        incomingThread.start()
+        print("Starting redirect_RelayNode_To_Beetle...")    
     
     def redirect_Beetle_To_RelayNode(self):
         while True:
