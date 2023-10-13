@@ -58,14 +58,14 @@ class MyDelegate(btle.DefaultDelegate):
         try:
             pkt_id = data[0]
             if (pkt_id == BEETLE_ONE_DATA):
-                pkt_data = struct.unpack('=BHHHHHHHBI', data)
+                pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
                 
                 if(self.validate_packet(data)):
                 
                     self.seq_no = pkt_data[-3]
-
+                    self.beetle.total_bytes_received += 9 #Only data bytes
                     print(f"[red] Beetle One Packet received successfully: {pkt_data}[/red]")
-
+                    self.send_queue.put(data)
                     # data_manager.put_data(pkt_id, data)
 
             elif (pkt_id == BEETLE_TWO_DATA):
@@ -112,7 +112,7 @@ class MyDelegate(btle.DefaultDelegate):
                 # pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 if(self.validate_packet(data)):
 
-                    self.beetle.total_bytes_received += 12 #Only data bytes
+                    self.beetle.total_bytes_received += 9 #Only data bytes
 
                     self.seq_no = pkt_data[-3]
                     # if self.beetle.completed_handshake:
@@ -188,12 +188,12 @@ class MyDelegate(btle.DefaultDelegate):
             print(f"Received {self.received_crc_int}")
             print(f"Received data packet: {packet[:-4]}")
             print(f"Calculated {self.calculated_crc}")
-            # if time.time() - self.first_crc_fail_time > 3:
-            #     self.first_crc_fail_time = 0
-            #     self.crc_fail_count = 0
+            if time.time() - self.first_crc_fail_time > 3:
+                self.first_crc_fail_time = 0
+                self.crc_fail_count = 0
 
-            # if self.crc_fail_count == 0:
-            #     self.first_crc_fail_time = time.time()
+            if self.crc_fail_count == 0:
+                self.first_crc_fail_time = time.time()
             
             self.crc_fail_count += 1
         

@@ -209,7 +209,7 @@ class BeetleDevice:
         # If received message meant for gun beetles i..e., bullet count
         # Assume format ("b", 6)
         try:
-            current_data = receive_queue.get()
+            current_data = receive_queue.get_nowait()
             data_type, data_content = current_data[0], current_data[1]
             # data_type = "b"
             # self.updated_bullet_count = self.updated_bullet_count - 1
@@ -223,7 +223,7 @@ class BeetleDevice:
                     self.characteristic.write(encrypted_updated_bullet_count)
             # If update to health
             if data_type == "h":
-                if beetle_device_id == "b3":
+                if beetle_device_id == "b3" or beetle_device_id == "b2":
                     encrypted_flag = 'g'.encode('utf-8')
                     self.characteristic.write(encrypted_flag)
                     encrypted_updated_health = struct.pack('B', data_content)
