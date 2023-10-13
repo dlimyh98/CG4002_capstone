@@ -91,10 +91,10 @@ class LaptopClient(threading.Thread):
                 # asyncio.create_task(self.send_message(writer))
                 # asyncio.create_task(self.receive_message(reader))
 
-                asyncio.gather(
+                await asyncio.gather(
                     asyncio.create_task(self.send_message(writer)),
                     asyncio.create_task(self.receive_message(reader)),
-                    asyncio.create_task(self.get_user_input())
+                    asyncio.create_task(self.send_kb_input_to_beetle())
                 )
 
             except ConnectionRefusedError:
@@ -109,16 +109,20 @@ class LaptopClient(threading.Thread):
         await self.send_queue.put(data)
     
     async def dequeue_data(self):
-        await self.receive_queue.get()
+        data = await self.receive_queue.get()
+        print(f"dequeued data: {data}")
+        return data
 
     async def send_kb_input_to_beetle(self):
         loop = asyncio.get_event_loop()
         while self.is_connected:
             try:
                 user_input = await loop.run_in_executor(None, input, ("Enter something to send tuple to beetles:"))
-                message = self.create_dummy_beetle_data(user_input)
+                message = self.create_dummy_beetle_data()
                 if message:
+                    print(message)
                     await self.receive_queue.put(message)
+                    print(self.receive_queue.qsize())
             except Exception as e:
                 print(f"Error while getting user input: {e}")
     

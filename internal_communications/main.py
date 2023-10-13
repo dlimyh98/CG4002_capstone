@@ -24,7 +24,7 @@ beetle_devices = [
     {"address": "D0:39:72:E4:80:9F", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b6"}, # Gun Beetle 2
 ]
 
-HOSTNAME = "172.25.110.74"
+HOSTNAME = "192.168.254.192"
 REMOTE_BIND_PORT = 8080
 
 class BeetleMain(threading.Thread):
@@ -34,10 +34,12 @@ class BeetleMain(threading.Thread):
         self.receive_queue = queue.Queue()
         self.relay_node = LaptopClient(HOSTNAME, REMOTE_BIND_PORT)
         self.beetle_threads = []
-
+        self.loop = None
 
     # instantiate Beetles, Relay Node, and the pipeline
     def run(self):
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self.spawn_beetle_threads()
         self.relay_node.start()
 
@@ -45,8 +47,8 @@ class BeetleMain(threading.Thread):
         self.relay_node.loop_ready.wait()
 
         # run LaptopClient's async start method
-        # loop = asyncio.get_event_loop()
-        loop = self.relay_node.loop
+        loop = asyncio.get_event_loop()
+        # loop = self.relay_node.loop
         # loop.run_until_complete(self.relay_node.async_start())
         asyncio.run_coroutine_threadsafe(self.relay_node.async_start(), loop)
 
@@ -61,18 +63,17 @@ class BeetleMain(threading.Thread):
         while True:
             data = self.send_queue.get()
             print(f"Data taken: {data} | Queue Size After Taking: {self.send_queue.qsize()}")
-            asyncio.run_coroutine_threadsafe(self.relay_node.enqueue_data(data), self.relay_node.loop)
+            asyncio.run_coroutine_threadsafe(self.relay_node.enqueue_data(data), self.loop)
             print(f"Data transferred: {data}")
 
     def redirect_RelayNode_To_Beetle(self):
         while True:
-            loop = self.relay_node.loop
-            future = asyncio.run_coroutine_threadsafe(self.relay_node.dequeue_data(), loop)
+            future = asyncio.run_coroutine_threadsafe(self.relay_node.dequeue_data(), self.loop)
             data = future.result()
-
             # send data to beetle
+            print(f"Data received: {data} | Queue Size After Taking: {self.relay_node.receive_queue.qsize()}")
             self.receive_queue.put(data)
-            print(f"Data transferred: {data}")
+            print(f"Data received: {data}")
 
     def spawn_beetle_threads(self):
         for device_info in beetle_devices:
