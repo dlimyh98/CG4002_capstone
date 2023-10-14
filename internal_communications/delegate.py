@@ -3,7 +3,6 @@ import struct
 from rich import print
 from errors import MaxCRCFailureError
 import time
-from data_manager import DataManager
 from data_collector import DataCollector
 import logging
 
@@ -15,8 +14,6 @@ BEETLE_FOUR_DATA=5 # Gun Beetle 1
 BEETLE_FIVE_DATA=6
 BEETLE_SIX_DATA=7 # Gun Beetle 2
 MAX_FAIL_COUNT = 5
-
-data_manager = DataManager()
 
 class MyDelegate(btle.DefaultDelegate):
    
