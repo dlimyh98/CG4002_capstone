@@ -1,10 +1,10 @@
-# class implementation for laptop server (on Ultra96)
+# class implementation for relay node server (on Ultra96)
 import asyncio
 
 HOST = '0.0.0.0' # listen on all network interfaces
 PORT = 8080
 
-class LaptopServer:
+class RelayNodeServer:
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -72,17 +72,17 @@ class LaptopServer:
         # wait for a connection
         # three params: callback, host, port
         # callback funtion: called whenever a new client connection is established
-            print("Laptop server starting:")
+            print("Relay Node server starting:")
             self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
             try: 
                 async with self.server:
-                    print(f"Laptop server listening on {self.host}:{self.port}")
+                    print(f"Relay Node server listening on {self.host}:{self.port}")
                     await self.server.serve_forever()
             except asyncio.CancelledError:
-                print("Laptop server cancelled")
+                print("Relay Node server cancelled")
                 return
             except Exception as e:
-                print(f"Laptop server error: {e}")
+                print(f"Relay Node server error: {e}")
 
     async def stop(self):
         if not self.is_running:
@@ -93,12 +93,12 @@ class LaptopServer:
         if self.server:
             self.server.close()
             await self.server.wait_closed()
-            print("Laptop server stopped.")
+            print("Realy Node server stopped.")
 
 
 def main():
-    laptop_server = LaptopServer(HOST, PORT)
-    asyncio.run(laptop_server.start())
+    relay_node_server = RelayNodeServer(HOST, PORT)
+    asyncio.run(relay_node_server.start())
 
 
 if __name__ == '__main__':

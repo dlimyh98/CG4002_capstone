@@ -4,7 +4,7 @@ import threading
 import asyncio
 import queue
 import concurrent.futures
-from laptop_relay_node import LaptopClient
+from relay_node_client import RelayNodeClient
 from device import BeetleDevice
 
 # Set up logging configuration
@@ -34,7 +34,7 @@ class BeetleMain(threading.Thread):
         self.receive_queue = queue.Queue()
         self.beetle_threads = []
         self.loop = loop
-        self.relay_node = LaptopClient(HOSTNAME, REMOTE_BIND_PORT, loop)
+        self.relay_node = RelayNodeClient(HOSTNAME, REMOTE_BIND_PORT, loop)
 
     # instantiate Beetles, Relay Node, and the pipeline
     def run(self):

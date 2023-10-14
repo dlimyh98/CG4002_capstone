@@ -2,13 +2,13 @@
 
 import asyncio
 import json
-from laptop_server import LaptopServer
+from relay_node_server import RelayNodeServer
 from eval_client import EvalClient
 from visualizer_ultra96 import VisualizerClient
 
 # define constants
-LAPTOP_SERVER_HOST = '0.0.0.0'
-LAPTOP_SERVER_PORT = 8080
+RELAY_NODE_SERVER_HOST = '0.0.0.0'
+RELAY_NODE_SERVER_PORT = 8080
 ULTRA96_SERVER_IP = "127.0.0.1"
 SECRET_KEY = "mysecretkey12345"
 HANDSHAKE_PASSWORD = "hello"
@@ -17,7 +17,7 @@ class Ultra96:
     def __init__(self):
 
         # initalise classes
-        self.laptop_server = LaptopServer(LAPTOP_SERVER_HOST, LAPTOP_SERVER_PORT)
+        self.relay_node_server = RelayNodeServer(RELAY_NODE_SERVER_HOST, RELAY_NODE_SERVER_PORT)
         self.eval_client = EvalClient(ULTRA96_SERVER_IP, SECRET_KEY, HANDSHAKE_PASSWORD)
         self.visuazlier_client = VisualizerClient()
 
@@ -29,7 +29,7 @@ class Ultra96:
             input("enter to begin:")
             await asyncio.gather(
                 asyncio.create_task(self.eval_client.run()),
-                asyncio.create_task(self.laptop_server.start()) ,  
+                asyncio.create_task(self.relay_node_server.start()) ,  
                 asyncio.create_task(self.visuazlier_client.start()),
                 asyncio.create_task(self.redirect_LaptopServer_to_EvalClient()),
                 asyncio.create_task(self.redirect_Visualizer_to_LaptopServer())
@@ -44,7 +44,7 @@ class Ultra96:
             return
         try:
             while self.is_running:
-                data = await self.laptop_server.receive_queue.get()
+                data = await self.relay_node_server.receive_queue.get()
 
                 if ("stop" in data):
                     await self.stop()
@@ -92,7 +92,7 @@ class Ultra96:
             while self.is_running:
                 data = await self.visuazlier_client.receive_queue.get()
                 print(f"[Visualizer -> LaptopServer:] {data}")
-                await self.laptop_server.send_queue.put(data) 
+                await self.relay_node_server.send_queue.put(data) 
         except asyncio.CancelledError:
             return
         except Exception as e:
@@ -105,7 +105,7 @@ class Ultra96:
         # close other connections here
         await asyncio.gather(
             await self.eval_client.stop(),
-            await self.laptop_server.stop(),
+            await self.relay_node_server.stop(),
             await self.visuazlier_client.stop()
         )
         # print a logout message
