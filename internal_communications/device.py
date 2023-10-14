@@ -8,6 +8,7 @@ import logging
 from states import States
 from delegate import MyDelegate
 from errors import MaxCRCFailureError
+from data_collector import DataCollector
 
 
 VERIFIED = "v"
@@ -39,6 +40,7 @@ class BeetleDevice:
 
         self.send_queue = send_queue
         self.receive_queue = receive_queue
+        self.data_collector = DataCollector("Yit Ching", "test")
 
     def beetle_handler(self):
 
@@ -214,10 +216,14 @@ class BeetleDevice:
             # check what data it is
             current_data = receive_queue.queue[0]
             
-            logging.info(f"Send Ext:{current_data}")
+            logging.debug(f"Send Ext:{current_data}")
             data_type, data_content = current_data[0], current_data[1]
             # If update to bullet count
+            logging.debug(f"data type:{data_type}")
+            logging.debug(f"data content:{data_content}")
+            logging.debug(f"beetle_device_id: {beetle_device_id}")
             if data_type == "b" and beetle_device_id in ["b4", "b6"]:
+                    logging.debug("Entered gun update")
                     receive_queue.get_nowait()  # remove data from queue
                     encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
                     self.characteristic.write(encrypted_flag)
@@ -225,6 +231,7 @@ class BeetleDevice:
                     self.characteristic.write(encrypted_updated_bullet_count)
             # If update to health
             if data_type == "h" and beetle_device_id in ["b3", "b2"]:
+                    logging.debug("Entered health update")
                     receive_queue.get_nowait()
                     encrypted_flag = 'g'.encode('utf-8')
                     self.characteristic.write(encrypted_flag)
