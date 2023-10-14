@@ -120,7 +120,6 @@ class BeetleDevice:
         Returns:
             None
         """
-        # characteristic = self.device.getCharacteristics(uuid=self.characteristic_uuid)[0]
         encrypted_data = data.encode('utf-8')
         self.characteristic.write(encrypted_data, withResponse=True)
         self.receive_data(0.1, 0.2)
@@ -175,7 +174,6 @@ class BeetleDevice:
                 logging.info(f"Reconnection attempt failed: {e}")
                 retry_count += 1
                 time.sleep(retry_delay * retry_count) 
-                # time.sleep(retry_delay)
         
     def receive_data(self, polling_interval=1, duration=10000000000):
         self.total_bytes_received = 0
@@ -215,11 +213,9 @@ class BeetleDevice:
             
             # check what data it is
             current_data = receive_queue.queue[0]
-            # current_data = receive_queue.get_nowait()
+            
             logging.info(f"Send Ext:{current_data}")
             data_type, data_content = current_data[0], current_data[1]
-            # data_type = "b"
-            # self.updated_bullet_count = self.updated_bullet_count - 1
             # If update to bullet count
             if data_type == "b" and beetle_device_id in ["b4", "b6"]:
                     receive_queue.get_nowait()  # remove data from queue
