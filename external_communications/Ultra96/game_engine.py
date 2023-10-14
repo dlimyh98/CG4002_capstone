@@ -3,6 +3,7 @@ import queue
 import json
 import time
 import logging
+import asyncio
 
 class Player:
     maxHealth = 100
@@ -39,6 +40,7 @@ class GameEngine:
         self.player1 = Player()
         self.player2 = Player()
         self.lock = threading.Lock()
+        self.loop = None
 
     def data_collection_thread(self):
         while True:
@@ -156,6 +158,26 @@ class GameEngine:
                     #print(f"Sending data to Unity: {data}")
                     logging.info(f"Sending data to Unity: {data}")
             time.sleep(1)
+
+    def start(self):
+        try:
+            # Create threads
+            data_collection = threading.Thread(target=game_engine.data_collection_thread)
+            game_processing = threading.Thread(target=game_engine.game_processing_thread)
+            data_output = threading.Thread(target=game_engine.data_output_thread)
+
+            # Start threads
+            data_collection.start()
+            game_processing.start()
+            data_output.start()
+
+            print("Game Engine started.")
+        except KeyboardInterrupt:
+            pass
+
+    async def async_start(self):
+        self.loop = asyncio.get_event_loop()
+        await self.loop.run_in_executor(None, self.start)
 
 if __name__ == "__main__":
     game_engine = GameEngine()
