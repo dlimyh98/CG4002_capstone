@@ -32,7 +32,7 @@ possible_actions = ["gun", "shield", "grenade", "reload", "web",
                     "portal", "punch", "hammer", "spear"]
 
 
-class LaptopClient(threading.Thread):
+class RelayNodeClient(threading.Thread):
     def __init__(self, hostname, remote_port):
         super().__init__()
         self.hostname = hostname
@@ -183,8 +183,8 @@ class LaptopClient(threading.Thread):
     #     #await asyncio.gather(send_task, receive_task)
 
 def main():
-    laptop_client = LaptopClient(HOSTNAME, REMOTE_BIND_PORT)
-    asyncio.run(laptop_client.async_start())
+    relay_node_client = RelayNodeClient(HOSTNAME, REMOTE_BIND_PORT)
+    asyncio.run(relay_node_client.async_start())
 
 
 if __name__ == '__main__':
