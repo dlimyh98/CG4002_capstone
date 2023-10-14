@@ -31,7 +31,6 @@ game_state_dict = {
 possible_actions = ["gun", "shield", "grenade", "reload", "web",
                     "portal", "punch", "hammer", "spear"]
 
-
 class LaptopClient(threading.Thread):
     def __init__(self, hostname, remote_port, loop):
         super().__init__()
@@ -107,19 +106,25 @@ class LaptopClient(threading.Thread):
 
     async def send_kb_input_to_beetle(self):
         loop = asyncio.get_event_loop()
+        current_index = 0
         while self.is_connected:
             try:
                 user_input = await loop.run_in_executor(None, input, ("Enter something to send tuple to beetles:"))
-                message = self.create_dummy_beetle_data()
+                message = self.create_dummy_beetle_data(current_index)
                 if message:
                     # print(message)
                     await self.receive_queue.put(message)
+                    if current_index == 6:
+                        current_index = 0
+                    else:
+                        current_index += 1
                     print(self.receive_queue.qsize())
             except Exception as e:
                 print(f"Error while getting user input: {e}")
     
-    def create_dummy_beetle_data(self):
-        return ('b', 2)
+    def create_dummy_beetle_data(self, current_index):
+        list_of_data = [("b", 6), ("h", 60), ("b", 2), ("h", 10), ("b", 3),("b", 0), ("h", 0)]
+        return list_of_data[current_index]
 
     # async def get_user_input(self):
     #     loop = asyncio.get_event_loop()  # Get the loop reference once
