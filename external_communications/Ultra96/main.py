@@ -5,6 +5,7 @@ import json
 from relay_node_server import RelayNodeServer
 from eval_client import EvalClient
 from visualizer_ultra96 import VisualizerClient
+from game_engine import GameEngine
 
 # define constants
 RELAY_NODE_SERVER_HOST = '0.0.0.0'
@@ -20,35 +21,103 @@ class Ultra96:
         self.relay_node_server = RelayNodeServer(RELAY_NODE_SERVER_HOST, RELAY_NODE_SERVER_PORT)
         self.eval_client = EvalClient(ULTRA96_SERVER_IP, SECRET_KEY, HANDSHAKE_PASSWORD)
         self.visuazlier_client = VisualizerClient()
+        self.game_engine = GameEngine()
 
         self.is_running = True
 
       
     async def run(self):
         try:
-            input("enter to begin:")
+            print("Ultra96 starting...")
             await asyncio.gather(
                 asyncio.create_task(self.eval_client.run()),
                 asyncio.create_task(self.relay_node_server.start()) ,  
                 asyncio.create_task(self.visuazlier_client.start()),
-                asyncio.create_task(self.redirect_LaptopServer_to_EvalClient()),
-                asyncio.create_task(self.redirect_Visualizer_to_LaptopServer())
+                asyncio.create_task(self.outgoing_data_pipeline()),
+                asyncio.create_task(self.incoming_data_pipeline())
             )
         except KeyboardInterrupt:
             pass
         finally:
             await self.stop()
-              
+
+    async def outgoing_data_pipeline(self):
+        """
+        Overall pipeline for outgoing data.
+
+        Source of this data should be from the hardware sensors.
+        """
+        if not self.is_running:
+            return
+        
+        # spawn all pipeline coroutines
+        asyncio.create_task(self.redirect_RelayNode_to_AI())
+        asyncio.create_task(self.redirect_AI_to_GameEngine())
+        asyncio.create_task(self.redirect_GameEngine_to_EvalClient_and_VisualizerClient())
+
+    async def incoming_data_pipeline(self):
+        """
+        Overall pipeline for incoming data.
+
+        Source of this data should be from the eval server or the visualizer.
+        """
+        if not self.is_running:
+            return
+        
+        # spawn all pipeline coroutines
+        asyncio.create_task(self.redirect_EvalClient_to_GameEngine())
+        asyncio.create_task(self.redirect_Visualizer_to_GameEngine())
+        asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
+
+    async def redirect_RelayNode_to_AI(self):
+        """
+        Redirects data from the Relay Node to the Hardware AI.
+
+        Only packets related to actions should be passed in, 'shoot' can be passed directly to game engine
+        """
+        if not self.is_running:
+            return
+        
+        loop = asyncio.get_event_loop()
+
+        try:
+            while self.is_running:
+                data = await self.relay_node_server.receive_queue.get()
+
+                # redirect to AI
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    async def redirect_AI_to_GameEngine(self):
+        #TODO
+        return
+    
+    async def redirect_GameEngine_to_EvalClient_and_VisualizerClient(self):
+        #TODO
+        return
+
+    async def redirect_EvalClient_to_GameEngine(self):
+        #TODO
+        return
+
+    async def redirect_Visualizer_to_GameEngine(self):
+        #TODO
+        return
+
+    async def redirect_GameEngine_to_RelayNodeServer(self):
+        #TODO
+        return 
+    
+
+    # method should be removed upon integration  
     async def redirect_LaptopServer_to_EvalClient(self):
         if not self.is_running:
             return
         try:
             while self.is_running:
                 data = await self.relay_node_server.receive_queue.get()
-
-                if ("stop" in data):
-                    await self.stop()
-                    break
 
                 print(f"[LaptopServer -> EvalClient and VisualizerClient:] {data}")
 
@@ -58,33 +127,8 @@ class Ultra96:
             return
         except Exception as e:
             print(f"pipe1 Error: {e}")
-         
-            # this part is just for dummy data, it should be removed upon integration
-            # if self.isGrenadeAction(data):
-            #     await self.eval_client.send_queue.put(data)
-            #     await self.visuazlier_client.send_queue.put(self.generate_grenade_msg_for_visualizer())
-            # else:
-            #     await self.eval_client.send_queue.put(data)
-            #     await self.visuazlier_client.send_queue.put(data)
-    
-    # temporary method to send a custom message to the visualizer_client for a grenade action
-    # if data represents a grenade action, return a custom message to be put 
-    # def isGrenadeAction(self, data):
-    #     parsed_data = json.loads(data)
-    #     if parsed_data["action"] == "grenade":
-    #         return True
-    #     return False
-    
-    # def generate_grenade_msg_for_visualizer(self):
-    #     message = {
-    #         "type": "action",
-    #         "player_id": "player1", 
-    #         "action_type": "grenade",
-    #         "target_id": "player2"           
-    #     }
-    #     return json.dumps(message)
 
-    
+    # this should be removed upon integration
     async def redirect_Visualizer_to_LaptopServer(self):
         if not self.is_running:
             return
