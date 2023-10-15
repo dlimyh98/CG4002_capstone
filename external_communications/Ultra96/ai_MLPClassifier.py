@@ -4,6 +4,7 @@ import pynq.lib.dma
 import numpy as np
 from numpy import mean
 import pandas as pd
+import queue
 
 class MLPClassifier:
     NO_INPUT_FEATURES = 30
@@ -11,12 +12,12 @@ class MLPClassifier:
     window_size = 40
     overlap = 20
     
-    def __init__(self, bitstream_path="../mlp_old.bit"):
+    def __init__(self, input_queue, bitstream_path="mlp_old.bit"):
         self.overlay = Overlay(bitstream_path)
         self.dma = self.overlay.axi_dma_0
         self.input_buffer = allocate(shape=(self.NO_INPUT_FEATURES,), dtype=np.float32)
         self.output_buffer = allocate(shape=(self.NO_OUTPUT_CLASSES,), dtype=np.float32)
-        self.sample_buffer = []
+        self.sample_buffer = input_queue
 
     @staticmethod
     def extract_features(window):
@@ -66,7 +67,7 @@ class MLPClassifier:
         Handles a single IMU data sample, adding it to the buffer. 
         If the buffer has sufficient data for a window, extract features and classify.
         """
-        self.sample_buffer.append(sample)
+        # self.sample_buffer.append(sample)
 
         # Check if sample_buffer has enough samples for a window
         if len(self.sample_buffer) >= self.window_size:
@@ -77,6 +78,7 @@ class MLPClassifier:
             # For 50% overlap, remove half of the window size from the beginning of the buffer
             self.sample_buffer = self.sample_buffer[-self.window_size//2:]
 
+            self.output_queue.put(action)
             return action
 
         return None
