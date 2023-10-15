@@ -7,6 +7,7 @@ from relay_node_server import RelayNodeServer
 from eval_client import EvalClient
 from visualizer_ultra96 import VisualizerClient
 from game_engine import GameEngine
+from ai_main import MainApp
 
 # define constants
 RELAY_NODE_SERVER_HOST = '0.0.0.0'
@@ -21,27 +22,40 @@ logging.basicConfig(level=logging.DEBUG,
                     filemode='w')
 
 class Ultra96:
-    def __init__(self):
+    def __init__(self, loop):
+
+        self.loop = loop
 
         # initalise classes
         self.relay_node_server = RelayNodeServer(RELAY_NODE_SERVER_HOST, RELAY_NODE_SERVER_PORT)
         self.eval_client = EvalClient(ULTRA96_SERVER_IP, SECRET_KEY, HANDSHAKE_PASSWORD)
         self.visuazlier_client = VisualizerClient()
         self.game_engine = GameEngine()
-
+        self.ai_predictor = MainApp(self.loop)
         self.is_running = True
 
-      
     async def run(self):
         try:
             print("Ultra96 starting...")
             logging.info("Ultra96 starting...")
             await asyncio.gather(
                 asyncio.create_task(self.eval_client.run()),
-                asyncio.create_task(self.relay_node_server.start()) ,  
+                asyncio.create_task(self.relay_node_server.start()),  
                 asyncio.create_task(self.visuazlier_client.start()),
-                asyncio.create_task(self.outgoing_data_pipeline()),
-                asyncio.create_task(self.incoming_data_pipeline())
+
+                # call HW AI async_start() method
+                asyncio.create_task(self.ai_predictor.async_start()),
+
+                asyncio.create_task(self.redirect_RelayNode_to_AI()),
+                asyncio.create_task(self.redirect_AI_to_GameEngine()),
+                asyncio.create_task(self.redirect_GameEngine_to_EvalClient_and_VisualizerClient()),
+
+                asyncio.create_task(self.redirect_EvalClient_to_GameEngine()),
+                asyncio.create_task(self.redirect_Visualizer_to_GameEngine()),
+                asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
+                
+                # asyncio.create_task(self.outgoing_data_pipeline()),
+                # asyncio.create_task(self.incoming_data_pipeline())
             )
         except KeyboardInterrupt:
             pass
@@ -84,70 +98,126 @@ class Ultra96:
         """
         if not self.is_running:
             return
-        
-        loop = asyncio.get_event_loop()
 
         try:
             while self.is_running:
                 data = await self.relay_node_server.receive_queue.get()
 
                 # redirect to AI
+                # await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data)
+                await self.loop.run_in_executor(None, self.ai_predictor.input_queue.append, data)
+                print(f"PUT Pipeline AI input queue length: {len(self.ai_predictor.input_queue)}")
+                print(f"RelayNode->AI: {data}")
+                
         except asyncio.CancelledError:
             return
         except Exception as e:
             print(f"Error: {e}")
     
     async def redirect_AI_to_GameEngine(self):
-        #TODO
-        return
-    
-    async def redirect_GameEngine_to_EvalClient_and_VisualizerClient(self):
-        #TODO
-        return
-
-    async def redirect_EvalClient_to_GameEngine(self):
-        #TODO
-        return
-
-    async def redirect_Visualizer_to_GameEngine(self):
-        #TODO
-        return
-
-    async def redirect_GameEngine_to_RelayNodeServer(self):
-        #TODO
-        return 
-    
-
-    # method should be removed upon integration  
-    async def redirect_LaptopServer_to_EvalClient(self):
         if not self.is_running:
             return
+
         try:
             while self.is_running:
-                data = await self.relay_node_server.receive_queue.get()
+                # dequeue output data from AI
+                data = await self.loop.run_in_executor(None, self.ai_predictor.output_queue.get)
 
-                print(f"[LaptopServer -> EvalClient and VisualizerClient:] {data}")
+                await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    async def redirect_GameEngine_to_EvalClient_and_VisualizerClient(self):
+        if not self.is_running:
+            return
+
+        try:
+            while self.is_running:
+                data = await self.loop.run_in_executor(None, self.game_engine.data_output_queue.get)
 
                 await self.eval_client.send_queue.put(data)
                 await self.visuazlier_client.send_queue.put(data)
         except asyncio.CancelledError:
             return
         except Exception as e:
-            print(f"pipe1 Error: {e}")
+            print(f"Error: {e}")
 
-    # this should be removed upon integration
-    async def redirect_Visualizer_to_LaptopServer(self):
+
+    async def redirect_EvalClient_to_GameEngine(self):
         if not self.is_running:
             return
+
         try:
             while self.is_running:
-                data = await self.visuazlier_client.receive_queue.get()
-                print(f"[Visualizer -> LaptopServer:] {data}")
-                await self.relay_node_server.send_queue.put(data) 
+                data = await self.eval_client.receive_queue.get()
+
+                await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
         except asyncio.CancelledError:
             return
         except Exception as e:
-            print(f"pipe2 Error: {e}")
+            print(f"Error: {e}")
+
+    async def redirect_Visualizer_to_GameEngine(self):
+        if not self.is_running:
+            return
+
+        try:
+            while self.is_running:
+                data = await self.visuazlier_client.receive_queue.get()
+
+                await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            print(f"Error: {e}")
+
+    async def redirect_GameEngine_to_RelayNodeServer(self):
+        if not self.is_running:
+            return
+
+        try:
+            while self.is_running:
+                data = await self.loop.run_in_executor(None, self.game_engine.data_output_queue.get)
+
+                await self.relay_node_server.send_queue.put(data)
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            print(f"Error: {e}")
+    
+
+    # # method should be removed upon integration  
+    # async def redirect_LaptopServer_to_EvalClient(self):
+    #     if not self.is_running:
+    #         return
+    #     try:
+    #         while self.is_running:
+    #             data = await self.relay_node_server.receive_queue.get()
+
+    #             print(f"[LaptopServer -> EvalClient and VisualizerClient:] {data}")
+
+    #             await self.eval_client.send_queue.put(data)
+    #             await self.visuazlier_client.send_queue.put(data)
+    #     except asyncio.CancelledError:
+    #         return
+    #     except Exception as e:
+    #         print(f"pipe1 Error: {e}")
+
+    # # this should be removed upon integration
+    # async def redirect_Visualizer_to_LaptopServer(self):
+    #     if not self.is_running:
+    #         return
+    #     try:
+    #         while self.is_running:
+    #             data = await self.visuazlier_client.receive_queue.get()
+    #             print(f"[Visualizer -> LaptopServer:] {data}")
+    #             await self.relay_node_server.send_queue.put(data) 
+    #     except asyncio.CancelledError:
+    #         return
+    #     except Exception as e:
+    #         print(f"pipe2 Error: {e}")
 
     async def stop(self):
         print("Stopping Ultra96...")
@@ -165,7 +235,8 @@ class Ultra96:
         logging.info("Ultra96 stopped.")
 
 async def main():
-    ultra96 = Ultra96() 
+    loop = asyncio.get_event_loop()
+    ultra96 = Ultra96(loop) 
     await ultra96.run()
 
 
