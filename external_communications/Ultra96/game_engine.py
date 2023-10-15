@@ -30,7 +30,7 @@ class Player:
         self.isShieldActive = False
 
 # Initialize the logging
-logging.basicConfig(filename='game_log.log', level=logging.INFO, format='%(asctime)s %(message)s')
+# logging.basicConfig(filename='game_log.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
 class GameEngine:
@@ -162,12 +162,12 @@ class GameEngine:
     def start(self):
         try:
             # Create threads
-            data_collection = threading.Thread(target=game_engine.data_collection_thread)
-            game_processing = threading.Thread(target=game_engine.game_processing_thread)
-            data_output = threading.Thread(target=game_engine.data_output_thread)
+            # data_collection = threading.Thread(target=self.data_collection_thread)
+            game_processing = threading.Thread(target=self.game_processing_thread)
+            data_output = threading.Thread(target=self.data_output_thread)
 
             # Start threads
-            data_collection.start()
+            # data_collection.start()
             game_processing.start()
             data_output.start()
 
@@ -179,15 +179,15 @@ class GameEngine:
         self.loop = asyncio.get_event_loop()
         await self.loop.run_in_executor(None, self.start)
 
-if __name__ == "__main__":
-    game_engine = GameEngine()
+# if __name__ == "__main__":
+#     game_engine = GameEngine()
 
-    # Create threads
-    data_collection = threading.Thread(target=game_engine.data_collection_thread)
-    game_processing = threading.Thread(target=game_engine.game_processing_thread)
-    data_output = threading.Thread(target=game_engine.data_output_thread)
+#     # Create threads
+#     data_collection = threading.Thread(target=game_engine.data_collection_thread)
+#     game_processing = threading.Thread(target=game_engine.game_processing_thread)
+#     data_output = threading.Thread(target=game_engine.data_output_thread)
 
-    # Start threads
-    data_collection.start()
-    game_processing.start()
-    data_output.start()
+#     # Start threads
+#     data_collection.start()
+#     game_processing.start()
+#     data_output.start()
