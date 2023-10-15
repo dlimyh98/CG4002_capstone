@@ -40,7 +40,7 @@ class BeetleDevice:
 
         self.send_queue = send_queue
         self.receive_queue = receive_queue
-        self.data_collector = DataCollector("Yit Ching", "test")
+        # self.data_collector = DataCollector("Shawn", "spiderweb")
 
     def beetle_handler(self):
 
@@ -207,7 +207,7 @@ class BeetleDevice:
 
     def send_ext(self, beetle_device_id, receive_queue):
         # If received message meant for gun beetles i..e., bullet count
-        # Assume format ("b", 6)
+        # Assume format ("b", 1, 6)
         try:
 
             if receive_queue.empty():
@@ -217,20 +217,40 @@ class BeetleDevice:
             current_data = receive_queue.queue[0]
             
             logging.debug(f"Send Ext:{current_data}")
-            data_type, data_content = current_data[0], current_data[1]
+            data_type, player, data_content = current_data[0], current_data[1], current_data[2]
+
             # If update to bullet count
             logging.debug(f"data type:{data_type}")
+            logging.debug(f"player:{player}")
             logging.debug(f"data content:{data_content}")
             logging.debug(f"beetle_device_id: {beetle_device_id}")
-            if data_type == "b" and beetle_device_id in ["b4", "b6"]:
+
+            if data_type == "b" and player == 2 and beetle_device_id == "b4":
                     logging.debug("Entered gun update")
                     receive_queue.get_nowait()  # remove data from queue
                     encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
                     self.characteristic.write(encrypted_flag)
                     encrypted_updated_bullet_count = struct.pack('B', data_content)
                     self.characteristic.write(encrypted_updated_bullet_count)
+
+            if data_type == "b" and player == 1 and beetle_device_id == "b6":
+                    logging.debug("Entered gun update")
+                    receive_queue.get_nowait()  # remove data from queue
+                    encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
+                    self.characteristic.write(encrypted_flag)
+                    encrypted_updated_bullet_count = struct.pack('B', data_content)
+                    self.characteristic.write(encrypted_updated_bullet_count)
+
             # If update to health
-            if data_type == "h" and beetle_device_id in ["b3", "b2"]:
+            if data_type == "h" and player == 1 and beetle_device_id == "b3":
+                    logging.debug("Entered health update")
+                    receive_queue.get_nowait()
+                    encrypted_flag = 'g'.encode('utf-8')
+                    self.characteristic.write(encrypted_flag)
+                    encrypted_updated_health = struct.pack('B', data_content)
+                    self.characteristic.write(encrypted_updated_health)
+
+            if data_type == "h" and player == 2 and beetle_device_id == "b2":
                     logging.debug("Entered health update")
                     receive_queue.get_nowait()
                     encrypted_flag = 'g'.encode('utf-8')

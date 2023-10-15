@@ -62,7 +62,7 @@ class MyDelegate(btle.DefaultDelegate):
                     self.beetle.total_bytes_received += 9 #Only data bytes
                     print(f"[purple] Beetle One Packet received successfully: {pkt_data}[/purple]")
                     self.send_queue.put(data)
-                    self.beetle.data_collector.store_data(pkt_data[1:7])
+                    # self.beetle.data_collector.store_data(pkt_data[1:7])
 
             elif (pkt_id == BEETLE_TWO_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)

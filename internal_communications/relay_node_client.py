@@ -3,8 +3,8 @@ import random
 import json
 import threading
 
-#HOSTNAME = "172.26.190.124" # U96's public IP
-HOSTNAME = "127.0.0.1" # for laptop
+HOSTNAME = "172.26.190.124" # U96's public IP
+# HOSTNAME = "127.0.0.1" # for laptop
 REMOTE_BIND_IP = "127.0.0.1"
 REMOTE_BIND_PORT = 8080
 
@@ -123,7 +123,7 @@ class RelayNodeClient(threading.Thread):
                 print(f"Error while getting user input: {e}")
     
     def create_dummy_beetle_data(self, current_index):
-        list_of_data = [("b", 6), ("h", 60), ("b", 2), ("h", 10), ("b", 3),("b", 0), ("h", 0)]
+        list_of_data = [("b", 1, 6), ("h", 1, 60), ("b", 1, 2), ("h", 1, 10), ("b", 1, 3),("b", 1, 0), ("h", 1, 0)]
         return list_of_data[current_index]
 
     # async def get_user_input(self):
