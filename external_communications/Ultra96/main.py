@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 from relay_node_server import RelayNodeServer
 from eval_client import EvalClient
 from visualizer_ultra96 import VisualizerClient
@@ -13,6 +14,11 @@ RELAY_NODE_SERVER_PORT = 8080
 ULTRA96_SERVER_IP = "127.0.0.1"
 SECRET_KEY = "mysecretkey12345"
 HANDSHAKE_PASSWORD = "hello"
+
+logging.basicConfig(level=logging.DEBUG, 
+                    format='%(asctime)s - %(levelname)s - %(message)s', 
+                    filename='U96main.log',
+                    filemode='w')
 
 class Ultra96:
     def __init__(self):
@@ -29,6 +35,7 @@ class Ultra96:
     async def run(self):
         try:
             print("Ultra96 starting...")
+            logging.info("Ultra96 starting...")
             await asyncio.gather(
                 asyncio.create_task(self.eval_client.run()),
                 asyncio.create_task(self.relay_node_server.start()) ,  
@@ -144,6 +151,7 @@ class Ultra96:
 
     async def stop(self):
         print("Stopping Ultra96...")
+        logging.info("Stopping Ultra96...")
         self.is_running = False
 
         # close other connections here
@@ -154,6 +162,7 @@ class Ultra96:
         )
         # print a logout message
         print("Ultra96 stopped.")
+        logging.info("Ultra96 stopped.")
 
 async def main():
     ultra96 = Ultra96() 

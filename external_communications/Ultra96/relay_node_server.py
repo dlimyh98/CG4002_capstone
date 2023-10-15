@@ -1,5 +1,6 @@
 # class implementation for relay node server (on Ultra96)
 import asyncio
+import logging
 
 HOST = '0.0.0.0' # listen on all network interfaces
 PORT = 8080
@@ -24,9 +25,11 @@ class RelayNodeServer:
 
         if client_address in self.connected_clients:
             print(f"Relay Node {client_address} is already connected. Rejecting connection...")
+            logging.error(f"Relay Node {client_address} is already connected. Rejecting connection...")
             return
 
-        print(f"Accepted connection from {client_address}")  
+        print(f"Accepted connection from {client_address}")
+        logging.info(f"Accepted connection from {client_address}")  
         self.connected_clients.add(client_address)
 
         try:
@@ -73,16 +76,19 @@ class RelayNodeServer:
         # three params: callback, host, port
         # callback funtion: called whenever a new client connection is established
             print("Relay Node server starting:")
+            logging.info("Relay Node server starting:")
             self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
             try: 
                 async with self.server:
                     print(f"Relay Node server listening on {self.host}:{self.port}")
+                    logging.info(f"Relay Node server listening on {self.host}:{self.port}")
                     await self.server.serve_forever()
             except asyncio.CancelledError:
                 print("Relay Node server cancelled")
                 return
             except Exception as e:
                 print(f"Relay Node server error: {e}")
+                logging.error(f"Relay Node server error: {e}")
 
     async def stop(self):
         if not self.is_running:

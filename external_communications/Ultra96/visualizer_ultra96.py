@@ -3,6 +3,7 @@
 
 import asyncio
 import paho.mqtt.client as mqtt
+import logging
 
 # constants
 CLIENT_USERNAME = "cg4002group7"
@@ -29,6 +30,7 @@ class VisualizerClient:
     # callback for when client receives a CONNACK response from the server
     def on_connect(self, client, userdata, flags, rc):
         print("Visualizer Client: CONNACK received with code %s." %rc)
+        logging.info("Visualizer Client: CONNACK received with code %s." %rc)
 
         # subscribing in on_connect() means if connection is lost and
         # reconnects, subscriptions will be renewed automatically
@@ -43,6 +45,7 @@ class VisualizerClient:
     # see which topic was subscribed to
     def on_subscribe(self, client, userdata, mid, granted_qos):
         print("Subscribed topic: " + SUBSCRIBE_TOPIC)
+        logging.info("Subscribed topic: " + SUBSCRIBE_TOPIC)
     
     # periodically publish messages
     async def publish_messages(self):

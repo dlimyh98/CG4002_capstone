@@ -2,19 +2,11 @@
 
 import asyncio
 import base64
+import logging
 
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
-
-# server IP address
-SERVER_IP = "127.0.0.1"
-
-# AES secret key
-SECRET_KEY = "mysecretkey12345"
-
-# handshake password
-PASSWORD = "hello"
 
 # hardcoded sample packets to send
 game_state_dict = {
@@ -93,7 +85,8 @@ class EvalClient:
                         break
                     data += _d
                 if len(data) == 0:
-                    print("no data length received.")
+                    print("Eval Client: no data length received.")
+                    logging.debug("Eval Client: no data length received.")
                     break
                 data = data.decode("utf8")
                 length = int(data[:-1])
@@ -107,9 +100,11 @@ class EvalClient:
                     data += _d
                 if len(data) == 0:
                     print("no message received")
+                    logging.debug("Eval Client: no message received")
                     break
                 msg = data.decode("utf8")
                 print("[EvalServer -> EvalClient:]" + msg)
+                logging.info("[EvalServer -> EvalClient:]" + msg)
         except ConnectionResetError:
             print("Connection reset.")
             return
@@ -125,6 +120,8 @@ class EvalClient:
         # connect to server
         self.reader, self.writer = await asyncio.open_connection(self.server_ip, server_port)
 
+        logging.info(f"Connected to eval_server at {self.server_ip}:{server_port}.")
+
         # create tasks for sending and receiving messages
         self.send_task = asyncio.create_task(self.send_message(self.writer))
         self.receive_task = asyncio.create_task(self.receive_message(self.reader))
@@ -132,6 +129,7 @@ class EvalClient:
         # send handshake
         await self.send_queue.put(self.handshake_password)
         print("EvalClient: sent handshake.")
+        logging.info("EvalClient: Sent handshake.")
         
         # wait for both tasks to complete
         await asyncio.gather(self.send_task, self.receive_task)
@@ -149,6 +147,7 @@ class EvalClient:
         if self.receive_task:
             self.receive_task.cancel()
         print("eval client stopped.")
+        logging.info("Eval Client stopped.")
 
         
     def encrypt_message(self, plaintext):
@@ -158,16 +157,4 @@ class EvalClient:
         padded_message = pad(plaintext.encode('utf8'), AES.block_size)
         ciphertext = iv + cipher.encrypt(padded_message)
         return base64.b64encode(ciphertext)
-    
-
-# async def main():
-#     evalClient = EvalClient(SERVER_IP, SECRET_KEY, PASSWORD)
-#     await evalClient.run()
-
-# if __name__ == '__main__':
-#     print("eval_client starting:")
-#     try:
-#         asyncio.run(main())
-#     except KeyboardInterrupt:
-#         pass    
         

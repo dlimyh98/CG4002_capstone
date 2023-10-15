@@ -30,7 +30,7 @@ class Player:
         self.isShieldActive = False
 
 # Initialize the logging
-logging.basicConfig(filename='game_log.log', level=logging.INFO, format='%(asctime)s %(message)s')
+# logging.basicConfig(filename='game_log.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
 class GameEngine:
