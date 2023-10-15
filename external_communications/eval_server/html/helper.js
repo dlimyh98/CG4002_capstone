@@ -108,8 +108,8 @@ function startConnection() {
     //disable all the buttons
     disableButton('button_next')
 
-    //const server_address = "ws://172.26.190.124:8001/" // when running on Ultra96
-    const server_address = "ws://127.0.0.1:8001/" // when running locally on laptop
+    const server_address = "ws://172.26.190.124:8001/" // when running on Ultra96
+    // const server_address = "ws://127.0.0.1:8001/" // when running locally on laptop
     //const server_address = "ws://cg4002-i.comp.nus.edu.sg:8001/"
     if (!("WebSocket" in window)) {
         // The browser doesn't support WebSocket

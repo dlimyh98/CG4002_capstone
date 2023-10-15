@@ -1,15 +1,15 @@
-2023-10-15 10:25:00,862 - DEBUG - Using proactor: IocpProactor
-2023-10-15 10:25:00,864 - INFO - Ultra96 starting...
-2023-10-15 10:25:08,026 - INFO - Relay Node server starting:
-2023-10-15 10:25:08,610 - INFO - Connected to eval_server at 127.0.0.1:50828.
-2023-10-15 10:25:08,610 - INFO - EvalClient: Sent handshake.
-2023-10-15 10:25:08,612 - INFO - Relay Node server listening on 0.0.0.0:8080
-2023-10-15 10:25:08,803 - INFO - Visualizer Client: CONNACK received with code 0.
-2023-10-15 10:25:08,987 - INFO - Subscribed topic: test
-2023-10-15 10:25:15,529 - INFO - Stopping Ultra96...
-2023-10-15 10:25:15,530 - INFO - Eval Client stopped.
-2023-10-15 10:25:15,531 - ERROR - unhandled exception during asyncio.run() shutdown
-task: <Task finished name='Task-1' coro=<main() done, defined at C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py:167> exception=TypeError('An asyncio.Future, a coroutine or an awaitable is required')>
+2023-10-15 15:14:59,673 - DEBUG - Using proactor: IocpProactor
+2023-10-15 15:14:59,676 - INFO - Ultra96 starting...
+2023-10-15 15:15:49,362 - INFO - Relay Node server starting:
+2023-10-15 15:15:50,180 - INFO - Connected to eval_server at 127.0.0.1:48589.
+2023-10-15 15:15:50,180 - INFO - EvalClient: Sent handshake.
+2023-10-15 15:15:50,181 - INFO - Relay Node server listening on 0.0.0.0:8080
+2023-10-15 15:15:50,479 - INFO - Visualizer Client: CONNACK received with code 0.
+2023-10-15 15:15:50,787 - INFO - Subscribed topic: test
+2023-10-15 15:16:22,868 - INFO - Stopping Ultra96...
+2023-10-15 15:16:22,869 - INFO - Eval Client stopped.
+2023-10-15 15:16:22,870 - ERROR - unhandled exception during asyncio.run() shutdown
+task: <Task finished name='Task-1' coro=<main() done, defined at C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py:173> exception=TypeError('An asyncio.Future, a coroutine or an awaitable is required')>
 Traceback (most recent call last):
   File "C:\Users\Alwin Ang\AppData\Local\Programs\Python\Python310\lib\asyncio\runners.py", line 44, in run
     return loop.run_until_complete(main)
@@ -30,18 +30,18 @@ KeyboardInterrupt
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 39, in run
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 41, in run
     await asyncio.gather(
 asyncio.exceptions.CancelledError
 
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 169, in main
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 176, in main
     await ultra96.run()
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 49, in run
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 55, in run
     await self.stop()
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 158, in stop
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 164, in stop
     await asyncio.gather(
   File "C:\Users\Alwin Ang\AppData\Local\Programs\Python\Python310\lib\asyncio\tasks.py", line 783, in gather
     fut = _ensure_future(arg, loop=loop)
