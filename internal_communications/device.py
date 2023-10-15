@@ -40,7 +40,7 @@ class BeetleDevice:
 
         self.send_queue = send_queue
         self.receive_queue = receive_queue
-        # self.data_collector = DataCollector("Shawn", "spiderweb")
+        self.data_collector = DataCollector("Yitching2", "test2")
 
     def beetle_handler(self):
 

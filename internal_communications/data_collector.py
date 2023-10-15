@@ -3,17 +3,22 @@ import os
 # Define the path where you want to save the files
 SAVE_DIRECTORY = "./data_files/"
 
-# Ensure the directory exists
-if not os.path.exists(SAVE_DIRECTORY):
-    os.makedirs(SAVE_DIRECTORY)
-
 class DataCollector:
     """Class to handle data storage operations."""
     
     def __init__(self, person_name, action):
         """Initialize the data collector with a fixed file."""
+        
+        # Create a sub-directory for the action
+        self.action_directory = os.path.join(SAVE_DIRECTORY, action)
+        
+        # Ensure the sub-directory exists
+        if not os.path.exists(self.action_directory):
+            os.makedirs(self.action_directory)
+        
+        # Set the file path within the sub-directory
         self.filename = f"{person_name}_{action}.txt"
-        self.filepath = os.path.join(SAVE_DIRECTORY, self.filename)
+        self.filepath = os.path.join(self.action_directory, self.filename)
         
         # Clear the file content if it exists
         open(self.filepath, 'w').close()
