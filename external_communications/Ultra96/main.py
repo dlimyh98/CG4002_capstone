@@ -107,8 +107,7 @@ class Ultra96:
 
                 logging.info(f"[RelayNode->AI]: Data from relay node server: {data}")
 
-                # await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data)
-                await self.loop.run_in_executor(None, self.ai_predictor.input_queue.append, data)
+                await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data)
 
                 logging.info(f"[RelayNode->AI]: Data to AI: {data}")
                 logging.info("[RelayNode->AI]: Exit pipeline")

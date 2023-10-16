@@ -14,35 +14,29 @@ class MainApp(threading.Thread):
         super().__init__()
         # self.data_source = pd.read_csv(csv_file, chunksize=1)  # Read one row at a time to simulate streaming
         # self.input_queue = queue.Queue()
-        self.input_queue = []
+        self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
-        self.mlp = MLPClassifier(self.input_queue)
+        self.mlp = MLPClassifier()
 
         self.loop = loop    
+        self.loop_ready = threading.Event()
 
     def run(self):
         asyncio.set_event_loop(self.loop)
+        self.loop_ready.set()
         self.loop.run_until_complete(self.async_start())
         self.loop.run_forever()
 
     def start(self):
-        # for chunk in self.data_source:
-        #     for _, row in chunk.iterrows():
-        #         imu_data = row.tolist()
-        #         print(imu_data)
-        #         action = self.mlp.handle_sample(imu_data)
-        #         if action is not None:
-        #             print(f"Detected Action: {action}")
-        #         time.sleep(0.05)  # Optional: Sleep to simulate time delay between IMU readings
         while True:
             try:
                 # dequeue data from the input_queue
-                print(f"AI Input Queue size: {len(self.input_queue)}")
-                action = self.mlp.handle_sample(self.input_queue)
-                #imu_data = self.input_queue.get()
-                #print(f"imu data: {imu_data}")
-                #action = self.mlp.handle_sample(imu_data)
-                print(f"Detected action: {action}")
+                data = self.input_queue.get()
+                action = self.mlp.handle_sample(data)
+                if action is not None:
+                    print(action)
+                    self.output_queue.put(action)
+                
             except Exception as e:
                 print(f"MainApp error: {e}")
 
