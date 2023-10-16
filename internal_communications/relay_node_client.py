@@ -51,8 +51,9 @@ class RelayNodeClient(threading.Thread):
             try:
                 message = self.send_queue.get_nowait()
                 # print(f"Relay Node: {message}")
-                str_message = ",".join(map(str, message))
-                writer.write(str_message.encode("utf8"))
+                # str_message = ",".join(map(str, message))
+                # writer.write(str_message.encode("utf8"))
+                writer.write(message)
                 await writer.drain()
             except asyncio.QueueEmpty:
                 print("Queue is empty, waiting for more data...")
@@ -123,7 +124,7 @@ class RelayNodeClient(threading.Thread):
                 print(f"Error while getting user input: {e}")
     
     def create_dummy_beetle_data(self, current_index):
-        list_of_data = [("b", 1, 6), ("h", 1, 60), ("b", 1, 2), ("h", 1, 10), ("b", 1, 3),("b", 1, 0), ("h", 1, 0)]
+        list_of_data = [("b", 2, 3), ("h", 1, 60), ("b", 1, 2), ("h", 1, 10), ("b", 1, 3),("b", 1, 0), ("h", 1, 0)]
         return list_of_data[current_index]
 
     # async def get_user_input(self):

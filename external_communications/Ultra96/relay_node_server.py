@@ -1,9 +1,17 @@
 # class implementation for relay node server (on Ultra96)
 import asyncio
 import logging
+import struct
 
 HOST = '0.0.0.0' # listen on all network interfaces
 PORT = 8080
+
+BEETLE_ONE_DATA=2
+BEETLE_TWO_DATA=3
+BEETLE_THREE_DATA=4
+BEETLE_FOUR_DATA=5 # Gun Beetle 1
+BEETLE_FIVE_DATA=6
+BEETLE_SIX_DATA=7 # Gun Beetle 2
 
 class RelayNodeServer:
     def __init__(self, host, port):
@@ -61,16 +69,61 @@ class RelayNodeServer:
     async def receive_message(self, reader):
         try:
             while self.is_running:
-                data = await reader.read(1024)
+                data = await reader.read(20)
+                print(f"data received: {data}")
                 if not data:
                     break
-                data = data.decode("utf8")
-                await self.receive_queue.put(data)
+                decoded_data = self.decode_message(data)
+                print(decoded_data)
+                await self.receive_queue.put(decoded_data)
                 await asyncio.sleep(0)
         except Exception as e:
             print(f"Error: {e}")
-
     
+    def decode_message(self, data):
+        try:
+            pkt_id = data[0]
+            if (pkt_id == BEETLE_ONE_DATA):
+                pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
+                
+                return pkt_data
+
+            elif (pkt_id == BEETLE_TWO_DATA):
+                pkt_data = struct.unpack('=BHHHHHHHBI', data)
+                
+                return pkt_data
+
+            elif (pkt_id == BEETLE_THREE_DATA):
+                pkt_data = struct.unpack('=BHHHHHHHBI', data)
+                
+                return pkt_data
+
+            # Gun Beetle 1 No Ack
+            elif (pkt_id == BEETLE_FOUR_DATA):
+                pkt_data = struct.unpack('=BHHHHHHHBI', data)
+                
+                return pkt_data
+           
+            # Glove Beetle 1
+            elif (pkt_id == BEETLE_FIVE_DATA):
+                pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
+                return pkt_data
+            
+            # Gun Beetle 2 No ack
+            elif (pkt_id == BEETLE_SIX_DATA):
+                pkt_data = struct.unpack('=BHHHHHHHBI', data)
+                
+                return pkt_data  
+            else:
+                pass
+
+        except struct.error as e:
+            print(f"Struct cannot be unpacked: {e}")
+        except AssertionError as e:
+            print("CRC validation failed.")
+        except Exception as e:
+            print(f"Unhandled Exception: {e}")
+
     async def start(self):
         # wait for a connection
         # three params: callback, host, port
