@@ -17,15 +17,15 @@ service_uuid = "0000dfb0-0000-1000-8000-00805f9b34fb"
 characteristic_uuid = "0000dfb1-0000-1000-8000-00805f9b34fb"  # Replace with the UUID of your characteristic
 beetle_devices = [
     {"address": "D0:39:72:E4:86:9C", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b1"}, # Glove Beetle 2
-    {"address": "D0:39:72:E4:8C:09", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b2"},
+    {"address": "D0:39:72:E4:8C:09", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b2"}, # Vest Beetle 2
     {"address": "D0:39:72:E4:86:F8", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b3"}, # Vest Beetle 1
     {"address": "D0:39:72:E4:8C:4D", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b4"}, # Gun Beetle 1
     {"address": "C4:BE:84:20:19:73", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b5"}, # Glove Beetle 1
     {"address": "D0:39:72:E4:80:9F", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b6"}, # Gun Beetle 2
 ]
-19
-# HOSTNAME = "172.26.190.124"
-HOSTNAME = "127.0.0.1"
+
+HOSTNAME = "172.26.190.124"
+# HOSTNAME = "127.0.0.1"
 REMOTE_BIND_PORT = 8080
 
 class BeetleMain(threading.Thread):

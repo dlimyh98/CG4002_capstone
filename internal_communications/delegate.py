@@ -83,6 +83,9 @@ class MyDelegate(btle.DefaultDelegate):
                 if self.validate_packet(data):
                 
                     self.seq_no = pkt_data[-3]
+
+                    if self.beetle.completed_handshake:
+                        self.beetle.send_ack(self.seq_no)
                     
                     print(f"[blue] Beetle Three Packet received successfully: {pkt_data}[/blue]")
                     self.send_queue.put(data)
