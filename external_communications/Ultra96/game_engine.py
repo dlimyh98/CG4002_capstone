@@ -30,7 +30,8 @@ class Player:
         self.isShieldActive = False
 
 # Initialize the logging
-# logging.basicConfig(filename='game_log.log', level=logging.INFO, format='%(asctime)s %(message)s')
+# uncomment below when running standalone
+# logging.basicConfig(filename=r'C:\Users\Admin\OneDrive\Documents\repos\CG4002_Vuforia/game_log2.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
 class GameEngine:
@@ -71,6 +72,9 @@ class GameEngine:
                         
                     elif msg_type == 'confirmation':
                         self.handle_confirmation(message)
+                    
+                    elif msg_type == 'eval_game_state':
+                        self.handle_eval_game_state(message)
                         
             self.send_entire_state()
             time.sleep(2)
@@ -103,6 +107,16 @@ class GameEngine:
                 acting_player.isShieldActive = True
                 acting_player.currentShield = Player.maxShield
                 acting_player.currentShields -= 1
+
+    def handle_eval_game_state(self, game_state_data):
+        player1_data = game_state_data['player1']
+        player2_data = game_state_data['player2']
+
+        for attr, value in player1_data.items():
+            setattr(self.player1, attr, value)
+
+        for attr, value in player2_data.items():
+            setattr(self.player2, attr, value) 
                 
     def handle_confirmation(self, confirmation_data):
         print("handle_confirmation is called")
