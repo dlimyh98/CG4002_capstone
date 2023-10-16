@@ -16,7 +16,7 @@ ULTRA96_SERVER_IP = "127.0.0.1"
 SECRET_KEY = "mysecretkey12345"
 HANDSHAKE_PASSWORD = "hello"
 
-logging.basicConfig(level=logging.DEBUG, 
+logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s', 
                     filename='U96main.log',
                     filemode='w')
@@ -42,8 +42,6 @@ class Ultra96:
                 asyncio.create_task(self.eval_client.run()),
                 asyncio.create_task(self.relay_node_server.start()),  
                 asyncio.create_task(self.visuazlier_client.start()),
-
-                # call HW AI async_start() method
                 asyncio.create_task(self.ai_predictor.async_start()),
 
                 asyncio.create_task(self.redirect_RelayNode_to_AI()),
@@ -101,13 +99,16 @@ class Ultra96:
 
         try:
             while self.is_running:
+                logging.info("[RelayNode->AI]: Enter pipeline.")
                 data = await self.relay_node_server.receive_queue.get()
 
-                # redirect to AI
+                logging.info(f"[RelayNode->AI]: Data from relay node server: {data}")
+
                 # await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data)
                 await self.loop.run_in_executor(None, self.ai_predictor.input_queue.append, data)
-                print(f"PUT Pipeline AI input queue length: {len(self.ai_predictor.input_queue)}")
-                print(f"RelayNode->AI: {data}")
+
+                logging.info(f"[RelayNode->AI]: Data to AI: {data}")
+                logging.info("[RelayNode->AI]: Exit pipeline")
                 
         except asyncio.CancelledError:
             return
