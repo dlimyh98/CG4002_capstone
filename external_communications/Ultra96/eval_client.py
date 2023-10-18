@@ -103,6 +103,7 @@ class EvalClient:
                     logging.debug("Eval Client: no message received")
                     break
                 msg = data.decode("utf8")
+                await self.receive_queue.put(msg)
                 print("[EvalServer -> EvalClient:]" + msg)
                 logging.info("[EvalServer -> EvalClient:]" + msg)
         except ConnectionResetError:
@@ -132,7 +133,7 @@ class EvalClient:
         logging.info("EvalClient: Sent handshake.")
         
         # wait for both tasks to complete
-        await asyncio.gather(self.send_task, self.receive_task)
+        #await asyncio.gather(self.send_task, self.receive_task)
     
 
     async def stop(self):

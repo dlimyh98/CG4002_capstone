@@ -5,6 +5,13 @@ import time
 import logging
 import asyncio
 
+# constants for received messages
+VEST = 3
+GUN = 5
+
+possible_actions = ["gun", "shield", "reload", "web",
+                    "portal", "punch", "hammer", "spear"]
+
 class Player:
     maxHealth = 100
     maxShield = 30
@@ -38,46 +45,127 @@ class GameEngine:
     def __init__(self):
         self.data_input_queue = queue.Queue()
         self.data_output_queue = queue.Queue()
+        self.eval_client_output_queue = queue.Queue()
         self.player1 = Player()
         self.player2 = Player()
         self.lock = threading.Lock()
         self.loop = None
 
-    def data_collection_thread(self):
-        while True:
-            try:
-                raw_data_action = input("Enter action JSON: ") 
-                data_action = json.loads(raw_data_action)
-                with self.lock:
-                    self.data_input_queue.put(data_action)
-            except json.JSONDecodeError:
-                print("Invalid JSON format.")
-            except Exception as e:
-                print(f"An error occurred: {e}")
+    # def data_collection_thread(self):
+    #     while True:
+    #         try:
+    #             raw_data_action = input("Enter action JSON: ") 
+    #             data_action = json.loads(raw_data_action)
+    #             with self.lock:
+    #                 self.data_input_queue.put(data_action)
+    #         except json.JSONDecodeError:
+    #             print("Invalid JSON format.")
+    #         except Exception as e:
+    #             print(f"An error occurred: {e}")
 
-            time.sleep(1)
+            # time.sleep(1)
 
     def game_processing_thread(self):
         while True:
-            with self.lock:
-                if not self.data_input_queue.empty():
-                    message = self.data_input_queue.get()
-                    msg_type = message.get('type')
-                    
-                    if msg_type == 'action':
-                        self.handle_action(message)
+            if not self.data_input_queue.empty():
+                raw_message = self.data_input_queue.get()
+                logging.info(f"[GameEngine]: Raw Message: {raw_message}")
 
-                    elif msg_type == 'utility':
-                        self.handle_utility(message)
-                        
-                    elif msg_type == 'confirmation':
-                        self.handle_confirmation(message)
+                # unpack relay node server packet/AI packet here
+                message = self.process_message(raw_message)
+                #print(f"[GameEngine]: process_message output: {message}")
+                message = json.loads(message)
+                action = self.process_action(message)
+                msg_type = message.get('type')
+                
+                if msg_type == 'action':
+                    self.handle_action(message)
+
+                elif msg_type == 'utility':
+                    self.handle_utility(message)
+                    self.send_entire_state(action)
                     
-                    elif msg_type == 'eval_game_state':
-                        self.handle_eval_game_state(message)
-                        
-            self.send_entire_state()
-            time.sleep(2)
+                elif msg_type == 'confirmation':
+                    self.handle_confirmation(message)
+                    self.send_entire_state(action)
+                
+                elif msg_type == 'eval_game_state':
+                    self.handle_eval_game_state(message)
+                    self.send_eval_server_game_state()
+                                          
+    
+    def process_message(self, message):
+        if isinstance(message, str):
+            # construct action message
+            action = message
+            #print(f"[GameEngine]: process_message message: {message}")
+
+            if action in possible_actions:
+                if action == "shield" or action == "reload":
+                    action_message = {
+                        "type": "utility",
+                        "player_id": "player1",
+                        "action_type": action
+                    }
+                else:
+                    action_message = {
+                        "type": "action",
+                        "player_id": "player1",
+                        "action_type": action,
+                        "target_id": "player2"
+                    }
+                return json.dumps(action_message)
+            
+            # message is from eval_client
+            else:
+                game_state_message = self.convert_state_for_game_engine(json.loads(message))
+                return json.dumps(game_state_message)
+        
+        if isinstance(message, tuple):
+            logging.info("[GameEngine]: IS TUPLE")
+            logging.info(f"[GameEngine]: message[0]: {message[0]}")
+            # check message[0]
+            # if gun, construct action (shoot) message
+            # if vest, construct confirmation (hit/miss) message
+            if message[0] == GUN:
+                if message[2] == 1:
+                    action_message = {
+                        "type": "action",
+                        "player_id": "player1",
+                        "action_type": "shoot",
+                        "target_id": "player2"
+                    }
+                    return action_message
+            
+            if message[0] == VEST:
+                hit_var = False
+                if message[1] == 1:
+                    hit_var = True
+                    action_data = {
+                        "type": "confirmation",
+                        "player_id": "player1",
+                        "action_type": "shoot",
+                        "target_id": "player2",
+                        "hit": hit_var
+                    }
+                    action_message = json.dumps(action_data)
+                    return action_message
+                else:
+                    action_data = {
+                        "type": "confirmation",
+                        "player_id": "player1",
+                        "action_type": "shoot",
+                        "target_id": "player2",
+                        "hit": hit_var
+                    }
+                    action_message = json.dumps(action_data)
+                    logging.info(f"[GameEngine] Vest action_message: {action_message}")
+                    return action_message
+
+        
+    def process_action(self, message):
+        action_dict = json.loads(json.dumps(message))
+        return action_dict.get('action_type')
 
     def handle_action(self, action_data):
         action_type = action_data['action_type']
@@ -89,7 +177,7 @@ class GameEngine:
             if acting_player.currentGrenades > 0:
                 acting_player.currentGrenades -= 1
 
-        elif action_type == 'shot':
+        elif action_type == 'shoot':
             if acting_player.currentBullets > 0:
                 acting_player.currentBullets -= 1
 
@@ -119,7 +207,7 @@ class GameEngine:
             setattr(self.player2, attr, value) 
                 
     def handle_confirmation(self, confirmation_data):
-        print("handle_confirmation is called")
+        #print("handle_confirmation is called")
         action_type = confirmation_data['action_type']
         target_id = confirmation_data['target_id']
         hit = confirmation_data['hit']
@@ -131,7 +219,7 @@ class GameEngine:
         if action_type == 'grenade':
             damage = 30 if hit else 0
 
-        elif action_type == 'shot':
+        elif action_type == 'shoot':
             damage = 10 if hit else 0
 
         elif action_type in ['fist', 'spiderweb', 'portal', 'spear', 'hammer']:
@@ -140,7 +228,7 @@ class GameEngine:
         self.apply_damage(target_player, damage)
 
     def apply_damage(self, target_player, damage):
-        print(f"Inside apply_damage, applying {damage} damage to {target_player}")
+        #print(f"Inside apply_damage, applying {damage} damage to {target_player}")
         if target_player.isShieldActive:
             remaining_shield = target_player.currentShield - damage
             if remaining_shield >= 0:
@@ -155,35 +243,119 @@ class GameEngine:
                 target_player.deaths += 1
                 target_player.respawn()
 
-    def send_entire_state(self):
+    def convert_state_for_eval_client(self, action, game_engine_state):
+        def player_transform(player_data):
+            return {
+                "hp": player_data["currentHealth"],
+                "bullets": player_data["currentBullets"],
+                "grenades": player_data["currentGrenades"],
+                "shield_hp": player_data["currentShield"],
+                "deaths": player_data["deaths"],
+                "shields": player_data["currentShields"]
+            } 
+
+        transformed_data = {
+                "player_id": 1,
+                "action": action,
+                "game_state": {
+                    "p1": player_transform(game_engine_state["player1"]),
+                    "p2": player_transform(game_engine_state["player2"])
+                }
+            }
+        return transformed_data
+    
+    def convert_state_for_game_engine(self, eval_client_state):
+        # Extract player information
+        print(f"EVALCLIENT STATE: {eval_client_state}")
+        # p1 = eval_client_state["game_state"]["p1"]
+        # p2 = eval_client_state["game_state"]["p2"]
+
+        # p1_is_shield_active = False
+        # p1_shield_hp = eval_client_state["game_state"]["p1"]["shield_hp"]
+        # if p1_shield_hp > 0:
+        #     p1_is_shield_active = True
+
+        # p2_is_shield_active = False
+        # p2_shield_hp = eval_client_state["game_state"]["p2"]["shield_hp"]
+        # if p2_shield_hp > 0:
+        #     p2_is_shield_active = True
+
+        p1 = eval_client_state["p1"]
+        p2 = eval_client_state["p2"]
+
+        p1_is_shield_active = False
+        p1_shield_hp = eval_client_state["p1"]["shield_hp"]
+        if p1_shield_hp > 0:
+            p1_is_shield_active = True
+
+        p2_is_shield_active = False
+        p2_shield_hp = eval_client_state["p2"]["shield_hp"]
+        if p2_shield_hp > 0:
+            p2_is_shield_active = True
+
+        # Create the game engine packet
+        game_engine_packet = {
+            "type": "game_state",
+            "player1": {
+                "currentHealth": p1["hp"],
+                "currentShield": p1["shield_hp"],
+                "currentBullets": p1["bullets"],
+                "currentShields": p1["shields"],
+                "currentGrenades": p1["grenades"],
+                "deaths": p1["deaths"],
+                "isShieldActive": p1_is_shield_active
+            },
+            "player2": {
+                "currentHealth": p2["hp"],
+                "currentShield": p2["shield_hp"],
+                "currentBullets": p2["bullets"],
+                "currentShields": p2["shields"],
+                "currentGrenades": p2["grenades"],
+                "deaths": p2["deaths"],
+                "isShieldActive": p2_is_shield_active
+            }
+        }
+
+        return game_engine_packet
+    
+    def send_entire_state(self, action):
         state = {
             "type": "game_state",
             "player1": vars(self.player1),
             "player2": vars(self.player2)
         }
-        with self.lock:
-            self.data_output_queue.put(json.dumps(state))
+        eval_client_state = self.convert_state_for_eval_client(action, state)
+        self.eval_client_output_queue.put(json.dumps(eval_client_state))
+        self.data_output_queue.put(json.dumps(state))
 
-    def data_output_thread(self):
-        while True:
-            with self.lock:
-                if not self.data_output_queue.empty():
-                    data = self.data_output_queue.get()
-                    #print(f"Sending data to Unity: {data}")
-                    logging.info(f"Sending data to Unity: {data}")
-            time.sleep(1)
+    def send_eval_server_game_state(self):
+        state = {
+            "type": "game_state",
+            "player1": vars(self.player1),
+            "player2": vars(self.player2)
+        }
+        self.data_output_queue.put(json.dumps(state))
+
+    # def data_output_thread(self):
+    #     while True:
+    #         with self.lock:
+    #             if not self.data_output_queue.empty():
+    #                 data = self.data_output_queue.get()
+    #                 #print(f"Sending data to Unity: {data}")
+    #                 logging.info(f"Sending data to Unity: {data}")
+    #         time.sleep(1)
 
     def start(self):
         try:
             # Create threads
             # data_collection = threading.Thread(target=self.data_collection_thread)
             game_processing = threading.Thread(target=self.game_processing_thread)
-            data_output = threading.Thread(target=self.data_output_thread)
+            # data_output = threading.Thread(target=self.data_output_thread)
 
             # Start threads
             # data_collection.start()
             game_processing.start()
-            data_output.start()
+            # data_output.start()
 
             print("Game Engine started.")
         except KeyboardInterrupt:
