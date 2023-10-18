@@ -7,7 +7,7 @@ from relay_node_server import RelayNodeServer
 from eval_client import EvalClient
 from visualizer_ultra96 import VisualizerClient
 from game_engine import GameEngine
-from ai_main import MainApp
+# from ai_main import MainApp
 
 # define constants
 RELAY_NODE_SERVER_HOST = '0.0.0.0'
@@ -38,7 +38,7 @@ class Ultra96:
         self.eval_client = EvalClient(ULTRA96_SERVER_IP, SECRET_KEY, HANDSHAKE_PASSWORD)
         self.visuazlier_client = VisualizerClient()
         self.game_engine = GameEngine()
-        self.ai_predictor = MainApp(self.loop)
+        # self.ai_predictor = MainApp(self.loop)
         self.is_running = True
 
     async def run(self):
@@ -50,11 +50,11 @@ class Ultra96:
                 asyncio.create_task(self.relay_node_server.start()),  
                 asyncio.create_task(self.visuazlier_client.start()),
                 asyncio.create_task(self.game_engine.async_start()),
-                asyncio.create_task(self.ai_predictor.async_start()),
+                # asyncio.create_task(self.ai_predictor.async_start()),
 
                 asyncio.create_task(self.redirect_RelayNode_to_AI_or_GameEngine()),
-                asyncio.create_task(self.redirect_AI_to_GameEngine()),
-                asyncio.create_task(self.redirect_GameEngine_to_EvalClient_and_VisualizerClient()),
+                asyncio.create_task(self.redirect_AI_to_GameEngine_and_VisualizerClient()),
+                asyncio.create_task(self.redirect_GameEngine_to_EvalClient_and_VisualizerClient_and_RelayNodeServer()),
 
                 asyncio.create_task(self.redirect_EvalClient_to_GameEngine()),
                 asyncio.create_task(self.redirect_Visualizer_to_GameEngine()),
@@ -85,7 +85,7 @@ class Ultra96:
                 logging.info(f"[RelayNode->AI/GameEngine]: Data from relay node server: {data}")
 
                 # glove
-                if data[0] == BEETLE_ONE_DATA:
+                if data[0] == BEETLE_ONE_DATA or data[0] == BEETLE_FIVE_DATA:
                     await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data[1:7])
                     logging.info(f"[RelayNode->AI/GameEngine]: Data to AI: {data[1:7]}")
                 # gun or vest
@@ -100,47 +100,45 @@ class Ultra96:
         except Exception as e:
             print(f"[RelayNode->AI]: Error: {e}")
     
-    async def redirect_AI_to_GameEngine(self):
+    async def redirect_AI_to_GameEngine_and_VisualizerClient(self):
         if not self.is_running:
             return
 
         try:
             while self.is_running:
-                logging.info("[AI->GameEngine]: Enter pipeline.")   
+                logging.info("[AI->GameEngine, VisualizerClient:Action]: Enter pipeline.")   
                 # dequeue output data from AI
                 data = await self.loop.run_in_executor(None, self.ai_predictor.output_queue.get)
 
+                await self.visuazlier_client.send_queue.put(data)
                 await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
-
-                logging.info(f"[AI->GameEngine]: Data to GameEngine: {data}")
-                logging.info("[AI->GameEngine]: Exit pipeline.")
+                logging.info(f"[AI->GameEngine, VisualizerClient:Action]: Data to GameEngine, VisualizerClient: {data}")
+                logging.info("[AI->GameEngine, VisualizerClient:Action]: Exit pipeline.")
         except asyncio.CancelledError:
             return
         except Exception as e:
             print(f"[AI->GameEngine]: Error: {e}")
     
-    async def redirect_GameEngine_to_EvalClient_and_VisualizerClient(self):
+    async def redirect_GameEngine_to_EvalClient_and_VisualizerClient_and_RelayNodeServer(self):
         if not self.is_running:
             return
 
         try:
             while self.is_running:
-                logging.info("[GameEngine->EvalClient, VisualizerClient]: Enter pipeline.")
+                logging.info("[GameEngine->EvalClient, VisualizerClient, RelayNodeServer]: Enter pipeline.")
                 data = await self.loop.run_in_executor(None, self.game_engine.data_output_queue.get)
                 eval_client_data = await self.loop.run_in_executor(None, self.game_engine.eval_client_output_queue.get)
 
-                # pass to viz client
-                # transform the data from game engine to eval client's format (append action) and pass it to eval client
-                # reconstruct packet for relay node server here
-                # p1_hp = data["player1"]["currentHealth"]
-                # p1_bullets = data["player1"]["currentBullets"]
-                #logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: {data['player1']['currentHealth']}")   
-                # p1_data = (p1_hp, p1_bullets)
-                tuple = str((60, 3))
+                # eval_client_data is should follow eval server format
+                # break down p1's hp and bullet count to pass back to relay node server here
+                eval_client_data_json = json.loads(eval_client_data)
+                p1_hp = eval_client_data_json['game_state']['p1']['hp']
+                p1_bullets = eval_client_data_json['game_state']['p1']['bullets']
+                tuple = str((p1_hp, p1_bullets))
+                #tuple = str((60, 3))
                 await self.relay_node_server.send_queue.put(tuple)   
                 logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: {tuple}") 
          
-
                 await self.eval_client.send_queue.put(eval_client_data)
                 await self.visuazlier_client.send_queue.put(data)
                 logging.info(f"[GameEngine->EvalClient, VisualizerClient]: Data to both clients: {data}")
