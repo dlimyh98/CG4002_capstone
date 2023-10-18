@@ -44,6 +44,7 @@ bool dmpReady = false;       // set TRUE if DMP initialization is successful
 uint16_t packetSize = 42;    // expected DMP packet size (default is 42 bytes)
 uint16_t fifoCount;          // count of all bytes currently in FIFO
 uint8_t fifoBuffer[64];      // FIFO storage buffer
+bool mpuConnectionSucceed = false;
 
 // Orientation/motion vars from DMP
 Quaternion q;                         // [w, x, y, z], quaternion container
@@ -139,7 +140,6 @@ void setup() {
   Wire.begin();
   Serial.begin(BAUD_RATE);
   calibrate_IMU();
-  initialize_MPU();
   override_system_configs();                 // Overrides HPF setting and Gyro Sensitivity set by initialize_MPU()
   override_sampling_rate_configs();          // Overrides DLPF bandwidth, Sampling Rate
 
@@ -176,8 +176,12 @@ void loop() {
       waitForHandshakeAck();
       break;
     case 'i':
-     setStateToSend();
-     break;
+      if(mpuConnectionSucceed){
+        setStateToSend();
+      } else {
+        initialize_MPU();
+      }
+      break;
     default:
      resetFlags();
      break;
@@ -290,6 +294,7 @@ void setStateToSetup(){
 void setStateToSend() {
   currentState = 's';
 }
+
 //=======================================================
 
 void get_dmp_data() {
@@ -577,6 +582,7 @@ void initialize_MPU() {
     // get expected DMP packet size for later comparison. Should be 42 (for our DMP version of 2.x)
     // Note that other DMP versions have different FIFO packet size/layout (e.g. DMP version of 6.x has different size & layout)
     packetSize = mpu.dmpGetFIFOPacketSize();
+    mpuConnectionSucceed = true;
   } 
 //  else {
 //    // ERROR!
