@@ -26,7 +26,7 @@ const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 6
 #define ACCEL_THRESHOLD_FOR_COLLECTION 0
 
 //================ Internal Comms Variables =================
-#define GLOVE_BEETLE_DATA 6
+#define GLOVE_BEETLE_DATA 2
 
 uint8_t seq_no;
 uint8_t prev_seq_no;
@@ -155,13 +155,17 @@ void loop() {
     if (Serial.peek() == 'h') 
       currentState = Serial.read();
   }
-
+  
+  if(mpu.dmpGetCurrentFIFOPacket(fifoBuffer)){
+    get_dmp_data();
+  }
+  
   switch(currentState) {
     case 's':
-      if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer) and sentHandshakeAck) {
+      if (sentHandshakeAck) {
         // Expected to trigger at ~SAMPLING_RATE_FREQUENCY
-        get_dmp_data(GLOVE_BEETLE_DATA); 
-//        send_to_internal_comms(GLOVE_BEETLE_DATA);
+//        get_dmp_data(GLOVE_BEETLE_DATA); 
+        send_to_internal_comms(GLOVE_BEETLE_DATA);
       }
       break;
     case 'h':
@@ -288,7 +292,7 @@ void setStateToSend() {
 }
 //=======================================================
 
-void get_dmp_data(uint8_t type) {
+void get_dmp_data() {
   /********************************************* IMPORTANT NOTE *********************************************/
   /* Using i2cdevlib (Jeff Rowberg library), the ACCELEROMETER values are exactly HALF of what you expect
       i.e For default accelerometer sensitivity of +-2g (16384LSB/g sensitivity), and MPU laying down, you would expect ~16834 for Z-axis accel
@@ -340,22 +344,66 @@ void get_dmp_data(uint8_t type) {
     hull_moving_average();
   }
 
-  // Sensitize and scale up the data (to increase range for AI training)
-  packet.type = type;
-  packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
-  packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
-  packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
-  packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
-  packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
-  packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
-  packet.sequence_number = seq_no;
-  prev_seq_no = seq_no;
-  packet.padding_1 = 0;
-  packet.padding_2 = 0;
-  packet.padding_3 = 0;
-  packet.padding_4 = 0;
-  packet.crcsum = calculateDataCrc32(&packet);
-  Serial.write((uint8_t *)&packet, sizeof(packet));
+//  // Sensitize and scale up the data (to increase range for AI training)
+//  packet.type = type;
+//  packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
+//  packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
+//  packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
+//  packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
+//  packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
+//  packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
+//  packet.sequence_number = seq_no;
+//  prev_seq_no = seq_no;
+//  packet.padding_1 = 0;
+//  packet.padding_2 = 0;
+//  packet.padding_3 = 0;
+//  packet.padding_4 = 0;
+//  packet.crcsum = calculateDataCrc32(&packet);
+//  Serial.write((uint8_t *)&packet, sizeof(packet));
+////  Serial.write((uint8_t*)&packet.type, sizeof(packet.type));
+////  Serial.write((uint8_t*)&packet.AccX, sizeof(packet.AccX));
+////  Serial.write((uint8_t*)&packet.AccY, sizeof(packet.AccY));
+////  Serial.write((uint8_t*)&packet.AccZ, sizeof(packet.AccZ));
+////  Serial.write((uint8_t*)&packet.GyroX, sizeof(packet.GyroX));
+////  Serial.write((uint8_t*)&packet.GyroY, sizeof(packet.GyroY));
+////  Serial.write((uint8_t*)&packet.GyroZ, sizeof(packet.GyroZ));
+////  Serial.write((uint8_t*)&packet.sequence_number, sizeof(packet.sequence_number));
+////  Serial.write((uint8_t*)&packet.padding_1, sizeof(packet.padding_1));
+////  Serial.write((uint8_t*)&packet.padding_2, sizeof(packet.padding_2));
+////  Serial.write((uint8_t*)&packet.padding_3, sizeof(packet.padding_3));
+////  Serial.write((uint8_t*)&packet.padding_4, sizeof(packet.padding_4));
+////  Serial.write((uint8_t*)&packet.crcsum, sizeof(packet.crcsum));
+//   Serial.flush();
+//   delay(20);
+}
+
+void send_to_internal_comms(uint8_t type) {
+  //see_hma_effectiveness();
+
+  // Thresholding (based on Accelerometer values)
+  // For undisturbed MPU, absolute summation across AccX,AccY,AccZ (scaled with SPEC_SHEET_DIFFERENCE already) is ~100
+  //if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
+  //  return;
+      
+  // Send over to Internal Comms
+  //Serial.write(packet);
+    Datapacket packet;
+   // Sensitize and scale up the data (to increase range for AI training)
+    packet.type = type;
+    packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
+    packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
+    packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
+    packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
+    packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
+    packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
+    packet.sequence_number = seq_no;
+    prev_seq_no = seq_no;
+    packet.padding_1 = 0;
+    packet.padding_2 = 0;
+    packet.padding_3 = 0;
+    packet.padding_4 = 0;
+    packet.crcsum = calculateDataCrc32(&packet);
+    Serial.write((uint8_t *)&packet, sizeof(packet));
 //  Serial.write((uint8_t*)&packet.type, sizeof(packet.type));
 //  Serial.write((uint8_t*)&packet.AccX, sizeof(packet.AccX));
 //  Serial.write((uint8_t*)&packet.AccY, sizeof(packet.AccY));
@@ -369,26 +417,8 @@ void get_dmp_data(uint8_t type) {
 //  Serial.write((uint8_t*)&packet.padding_3, sizeof(packet.padding_3));
 //  Serial.write((uint8_t*)&packet.padding_4, sizeof(packet.padding_4));
 //  Serial.write((uint8_t*)&packet.crcsum, sizeof(packet.crcsum));
-   Serial.flush();
-   delay(20);
-}
-
-void send_to_internal_comms(uint8_t type) {
-  //see_hma_effectiveness();
-
-  // Thresholding (based on Accelerometer values)
-  // For undisturbed MPU, absolute summation across AccX,AccY,AccZ (scaled with SPEC_SHEET_DIFFERENCE already) is ~100
-  //if (abs(packet.AccX) + abs(packet.AccY) + abs(packet.AccZ) < ACCEL_THRESHOLD_FOR_COLLECTION)
-  //  return;
-      
-  // Send over to Internal Comms
-  //Serial.write(packet);
-  Datapacket packet;
-  packet.type = type;
-  packet.sequence_number = seq_no;
-  prev_seq_no = seq_no;
-  packet.crcsum = calculateDataCrc32(&packet);
-  Serial.write((uint8_t *)&packet, sizeof(packet));
+    Serial.flush();
+    delay(20);
 }
 
 void hull_moving_average() {
