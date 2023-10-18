@@ -64,13 +64,14 @@ class RelayNodeClient(threading.Thread):
             data = await reader.read(1024)
             if not data:
                 break
-            received_message = data.decode("utf8")
+            received_message = data.decode()
+            tuple_message = eval(received_message)
             if received_message:
-                # print(received_message)
-                await self.receive_queue.put(received_message)
+                print(tuple_message)
+                await self.receive_queue.put(tuple_message)
                 # print(self.receive_queue.qsize())
             # tuple_message = tuple(map(int, received_message.split(",")))
-            print(f"Relay node received: {received_message}")
+            print(f"Relay node received: {tuple_message}")
 
     async def async_start(self):
         while not self.is_connected:
@@ -80,14 +81,14 @@ class RelayNodeClient(threading.Thread):
                 self.is_connected = True
                 
                 # Start the tasks after connecting
-                # asyncio.create_task(self.send_message(writer))
-                # asyncio.create_task(self.receive_message(reader))
+                asyncio.create_task(self.send_message(writer))
+                asyncio.create_task(self.receive_message(reader))
 
-                await asyncio.gather(
-                    asyncio.create_task(self.send_message(writer)),
-                    asyncio.create_task(self.receive_message(reader)),
-                    asyncio.create_task(self.send_kb_input_to_beetle())
-                )
+                # await asyncio.gather(
+                #     asyncio.create_task(self.send_message(writer)),
+                #     asyncio.create_task(self.receive_message(reader)),
+                #     asyncio.create_task(self.send_kb_input_to_beetle())
+                # )
 
             except ConnectionRefusedError:
                 print(f"Connection to Relay Node Server at {self.hostname}:{self.remote_port} failed. Retrying in 5 seconds...")

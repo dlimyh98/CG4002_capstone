@@ -24,8 +24,9 @@ beetle_devices = [
     {"address": "D0:39:72:E4:80:9F", "service_uuid": service_uuid, "characteristic_uuid": characteristic_uuid, "name": "b6"}, # Gun Beetle 2
 ]
 
-# HOSTNAME = "172.26.190.124"
-HOSTNAME = "127.0.0.1"
+HOSTNAME = "172.26.190.124"
+# HOSTNAME = "127.0.0.1"
+# HOSTNAME = "172.25.110.205"
 REMOTE_BIND_PORT = 8080
 
 class BeetleMain(threading.Thread):
