@@ -217,46 +217,46 @@ class BeetleDevice:
             current_data = receive_queue.queue[0]
             
             logging.debug(f"Send Ext:{current_data}")
-            data_type, player, data_content = current_data[0], current_data[1], current_data[2]
+            health, bullet_count = current_data[0], current_data[1]
 
             # If update to bullet count
-            logging.debug(f"data type:{data_type}")
-            logging.debug(f"player:{player}")
-            logging.debug(f"data content:{data_content}")
+            logging.debug(f"health:{health}")
+            logging.debug(f"bullet_count:{bullet_count}")
             logging.debug(f"beetle_device_id: {beetle_device_id}")
 
-            if data_type == "b" and player == 2 and beetle_device_id == "b4":
+            # bullet update
+            if beetle_device_id == "b4" or beetle_device_id == "b6":
                     logging.debug("Entered gun update")
                     receive_queue.get_nowait()  # remove data from queue
                     encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
                     self.characteristic.write(encrypted_flag)
-                    encrypted_updated_bullet_count = struct.pack('B', data_content)
+                    encrypted_updated_bullet_count = struct.pack('B', bullet_count)
                     self.characteristic.write(encrypted_updated_bullet_count)
 
-            if data_type == "b" and player == 1 and beetle_device_id == "b6":
-                    logging.debug("Entered gun update")
-                    receive_queue.get_nowait()  # remove data from queue
-                    encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
-                    self.characteristic.write(encrypted_flag)
-                    encrypted_updated_bullet_count = struct.pack('B', data_content)
-                    self.characteristic.write(encrypted_updated_bullet_count)
+            # if data_type == "b" and player == 1 and beetle_device_id == "b6":
+            #         logging.debug("Entered gun update")
+            #         receive_queue.get_nowait()  # remove data from queue
+            #         encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
+            #         self.characteristic.write(encrypted_flag)
+            #         encrypted_updated_bullet_count = struct.pack('B', data_content)
+            #         self.characteristic.write(encrypted_updated_bullet_count)
 
-            # If update to health
-            if data_type == "h" and player == 1 and beetle_device_id == "b3":
+            # # If update to health
+            if beetle_device_id == "b3" or beetle_device_id == "b2":
                     logging.debug("Entered health update")
                     receive_queue.get_nowait()
                     encrypted_flag = 'g'.encode('utf-8')
                     self.characteristic.write(encrypted_flag)
-                    encrypted_updated_health = struct.pack('B', data_content)
+                    encrypted_updated_health = struct.pack('B', health)
                     self.characteristic.write(encrypted_updated_health)
 
-            if data_type == "h" and player == 2 and beetle_device_id == "b2":
-                    logging.debug("Entered health update")
-                    receive_queue.get_nowait()
-                    encrypted_flag = 'g'.encode('utf-8')
-                    self.characteristic.write(encrypted_flag)
-                    encrypted_updated_health = struct.pack('B', data_content)
-                    self.characteristic.write(encrypted_updated_health)
+            # if data_type == "h" and player == 2 and beetle_device_id == "b2":
+            #         logging.debug("Entered health update")
+            #         receive_queue.get_nowait()
+            #         encrypted_flag = 'g'.encode('utf-8')
+            #         self.characteristic.write(encrypted_flag)
+            #         encrypted_updated_health = struct.pack('B', data_content)
+            #         self.characteristic.write(encrypted_updated_health)
                 
         except Exception as e:
             print(f"No data retrieved, {e}")

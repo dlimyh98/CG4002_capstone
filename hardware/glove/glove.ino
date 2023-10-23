@@ -17,13 +17,24 @@ const long GYRO_SENSITIVITY = 131;          // Full-scale == +-250deg/s
 const long ACCEL_SENSITIVITY = 16384;       // Full-scale == +-2g
 const float GYRO_SCALING_FACTOR = 1;        // Gyrometer scaling factor == 131/131 = 1
 const float ACCEL_SCALING_FACTOR = 0.03;    // Accelerometer scaling factor == 60/16384 = ~0.03
-#define BAUD_RATE 9600
+#define BAUD_RATE 115200
 #define SPEC_SHEET_DIFFERENCE 2
 #define AVERAGING_COUNTER 500
 #define MOVING_AVERAGE_WINDOW_SIZE 2
 #define SQUARE_ROOT_MOVING_AVERAGE_WINDOW_SIZE 1
 #define SAMPLING_RATE_FREQUENCY 20
 #define ACCEL_THRESHOLD_FOR_COLLECTION 0
+
+//================ Internal Comms Variables =================
+#define GLOVE_BEETLE_DATA 2
+
+uint8_t seq_no;
+uint8_t prev_seq_no;
+char currentState;
+bool sentHandshakeAck;
+bool ackReceived;
+char msg;
+unsigned long lastPacketSentTime = 0;
 
 /************************************** MPU control variables (from Jeff Rowberg) **************************************/
 MPU6050 mpu;
@@ -33,7 +44,7 @@ bool dmpReady = false;       // set TRUE if DMP initialization is successful
 uint16_t packetSize = 42;    // expected DMP packet size (default is 42 bytes)
 uint16_t fifoCount;          // count of all bytes currently in FIFO
 uint8_t fifoBuffer[64];      // FIFO storage buffer
-
+bool mpuConnectionSucceed = false;
 
 // Orientation/motion vars from DMP
 Quaternion q;                         // [w, x, y, z], quaternion container
@@ -92,20 +103,46 @@ typedef struct s_IMU {
 s_IMU IMU;
 
 /************************************** Packet for Internal Comms **************************************/
-typedef struct __attribute__((packed, aligned(1))) s_packet {
-  int8_t AccX, AccY, AccZ;
-  int16_t GyroX, GyroY, GyroZ;
-} s_packet;
-s_packet packet = {0};
+struct Ackpacket {
+  uint8_t type; //b
+  uint16_t padding_1; //h
+  uint16_t padding_2; //h
+  uint16_t padding_3; //h
+  uint16_t padding_4; //h
+  uint16_t padding_5; //h
+  uint16_t padding_6; //h
+  uint16_t padding_7; //h
+  uint8_t padding_8; //b
+  uint32_t crcsum; //i
+};
 
+struct Datapacket {
+  uint8_t type;
+  int8_t AccX;
+  int8_t AccY;
+  int8_t AccZ;
+  int16_t GyroX;
+  int16_t GyroY;
+  int16_t GyroZ;
+  uint16_t sequence_number;
+  uint8_t padding_1;
+  uint8_t padding_2;
+  uint8_t padding_3;
+  uint8_t padding_4;
+  uint32_t crcsum;
+};
+
+uint32_t calculateDataCrc32(Datapacket *pkt);
+uint32_t calculateAckCrc32(Ackpacket *pkt);
+unsigned long last_sent_handshake_time;
 
 void setup() {
   Wire.begin();
   Serial.begin(BAUD_RATE);
   calibrate_IMU();
-  initialize_MPU();
   override_system_configs();                 // Overrides HPF setting and Gyro Sensitivity set by initialize_MPU()
   override_sampling_rate_configs();          // Overrides DLPF bandwidth, Sampling Rate
+
 }
 
 
@@ -113,15 +150,152 @@ void setup() {
 void loop() {
   // dmpGetCurrentFIFOPacket() is overflow proof, use it! 
   // Alternative method of polling for INT_STATUS and checking DMP_INT, then reading DMP's FIFO is unreliable (conflicts with Serial.reads())
-  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-    // Expected to trigger at ~SAMPLING_RATE_FREQUENCY
+  
+  if (Serial.available()) {
+    if (Serial.peek() == 'h') 
+      currentState = Serial.read();
+  }
+  
+  if(mpu.dmpGetCurrentFIFOPacket(fifoBuffer)){
     get_dmp_data();
-
-    // Continuous stream from MPU at ~SAMPLING_RATE_FREQUENCY
-    send_to_internal_comms();
+  }
+  
+  switch(currentState) {
+    case 's':
+      if (sentHandshakeAck) {
+        // Expected to trigger at ~SAMPLING_RATE_FREQUENCY
+//        get_dmp_data(GLOVE_BEETLE_DATA); 
+        send_to_internal_comms(GLOVE_BEETLE_DATA);
+      }
+      break;
+    case 'h':
+      resetFlags();
+      if (millis() - last_sent_handshake_time > 10) {
+        sendHandshakeAck();
+      }
+      waitForHandshakeAck();
+      break;
+    case 'i':
+      if(mpuConnectionSucceed){
+        setStateToSend();
+      } else {
+        initialize_MPU();
+      }
+      break;
+    default:
+     resetFlags();
+     break;
   }
 }
 
+//========================Calculate CRC======================
+
+uint32_t calculateDataCrc32(Datapacket *pkt) {
+  return custom_crc32(&pkt->type, 
+    sizeof(pkt->type) +
+    sizeof(pkt->AccX) +
+    sizeof(pkt->AccY) +
+    sizeof(pkt->AccZ) +
+    sizeof(pkt->GyroX) +
+    sizeof(pkt->GyroY) +
+    sizeof(pkt->GyroZ) +
+    sizeof(pkt->sequence_number) +
+    sizeof(pkt->padding_1) +
+    sizeof(pkt->padding_2) +
+    sizeof(pkt->padding_3) +
+    sizeof(pkt->padding_4)
+  );
+}
+
+uint32_t calculateAckCrc32(Ackpacket *pkt) {
+  return custom_crc32(&pkt->type, 
+    sizeof(pkt->type) +
+    sizeof(pkt->padding_1) +
+    sizeof(pkt->padding_2) +
+    sizeof(pkt->padding_3) +
+    sizeof(pkt->padding_4) +
+    sizeof(pkt->padding_5) +
+    sizeof(pkt->padding_6) +
+    sizeof(pkt->padding_7) +
+    sizeof(pkt->padding_8)
+  );
+}
+
+//===========================================================
+
+//====================Custom CRC Library======================
+
+
+uint32_t custom_crc32(const uint8_t *data, size_t len) {
+  uint32_t crc = 0x00000000;
+  
+  for (size_t i = 0; i < len; i++) {
+    crc ^= data[i];
+    for (int j = 0; j < 8; j++) {
+      crc = (crc & 1) ? ((crc >> 1) ^ 0x04C11DB7) : (crc >> 1);
+    }
+  }
+  
+  return crc;
+}
+
+
+//================ Handshake =================
+
+void sendHandshakeAck() {
+  if (sentHandshakeAck) return;
+  Ackpacket packet;
+  packet.type = 1; // ACK
+  packet.padding_1 = 0;
+  packet.padding_2 = 0;
+  packet.padding_3 = 0;
+  packet.padding_4 = 0;
+  packet.padding_5 = 0;
+  packet.padding_6 = 0;
+  packet.padding_7 = 0;
+  packet.padding_8 = 0;
+  packet.crcsum = calculateAckCrc32(&packet);
+  last_sent_handshake_time = millis();
+  Serial.write((uint8_t *)&packet, sizeof(packet));
+}
+
+void waitForHandshakeAck(){
+  char ack_msg;
+
+  while (!Serial.available());
+  ack_msg = Serial.read();
+
+  if (ack_msg != 'v') {
+    resetFlags();
+    return;
+  }
+  sentHandshakeAck = true;
+  setStateToSetup();
+
+}
+
+void resetFlags() {
+  sentHandshakeAck = false;
+  ackReceived = false;
+  seq_no = 0;
+}
+
+//=======================================================
+//================ State Machine =================
+void setStateToHandshake() {
+  currentState = 'h';
+  sentHandshakeAck = false;
+}
+
+void setStateToSetup(){
+  currentState = 'i';
+}
+
+void setStateToSend() {
+  currentState = 's';
+}
+
+//=======================================================
 
 void get_dmp_data() {
   /********************************************* IMPORTANT NOTE *********************************************/
@@ -130,6 +304,7 @@ void get_dmp_data() {
         However, Jeff Rowberg's library is written with an older spec, which specifies (8192LSB/g) for +-2g. Meaning we get ~8192 for Z-axis accel when MPU laying down
          https://forum.arduino.cc/t/incorrect-accelerometer-sensitivity-with-mpu-6050/461038/17
   */
+  Datapacket packet;
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetAccel(&raw_accelerations, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
@@ -174,16 +349,40 @@ void get_dmp_data() {
     hull_moving_average();
   }
 
-  // Sensitize and scale up the data (to increase range for AI training)
-  packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
-  packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
-  packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
-  packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
-  packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
-  packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
+//  // Sensitize and scale up the data (to increase range for AI training)
+//  packet.type = type;
+//  packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
+//  packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
+//  packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
+//  packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
+//  packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
+//  packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
+//  packet.sequence_number = seq_no;
+//  prev_seq_no = seq_no;
+//  packet.padding_1 = 0;
+//  packet.padding_2 = 0;
+//  packet.padding_3 = 0;
+//  packet.padding_4 = 0;
+//  packet.crcsum = calculateDataCrc32(&packet);
+//  Serial.write((uint8_t *)&packet, sizeof(packet));
+////  Serial.write((uint8_t*)&packet.type, sizeof(packet.type));
+////  Serial.write((uint8_t*)&packet.AccX, sizeof(packet.AccX));
+////  Serial.write((uint8_t*)&packet.AccY, sizeof(packet.AccY));
+////  Serial.write((uint8_t*)&packet.AccZ, sizeof(packet.AccZ));
+////  Serial.write((uint8_t*)&packet.GyroX, sizeof(packet.GyroX));
+////  Serial.write((uint8_t*)&packet.GyroY, sizeof(packet.GyroY));
+////  Serial.write((uint8_t*)&packet.GyroZ, sizeof(packet.GyroZ));
+////  Serial.write((uint8_t*)&packet.sequence_number, sizeof(packet.sequence_number));
+////  Serial.write((uint8_t*)&packet.padding_1, sizeof(packet.padding_1));
+////  Serial.write((uint8_t*)&packet.padding_2, sizeof(packet.padding_2));
+////  Serial.write((uint8_t*)&packet.padding_3, sizeof(packet.padding_3));
+////  Serial.write((uint8_t*)&packet.padding_4, sizeof(packet.padding_4));
+////  Serial.write((uint8_t*)&packet.crcsum, sizeof(packet.crcsum));
+//   Serial.flush();
+//   delay(20);
 }
 
-void send_to_internal_comms() {
+void send_to_internal_comms(uint8_t type) {
   //see_hma_effectiveness();
 
   // Thresholding (based on Accelerometer values)
@@ -193,12 +392,38 @@ void send_to_internal_comms() {
       
   // Send over to Internal Comms
   //Serial.write(packet);
-  Serial.print(packet.AccX); Serial.print(",");
-  Serial.print(packet.AccY); Serial.print(",");
-  Serial.print(packet.AccZ); Serial.print(",");
-  Serial.print(packet.GyroX); Serial.print(",");
-  Serial.print(packet.GyroY); Serial.print(",");
-  Serial.println(packet.GyroZ);
+    Datapacket packet;
+   // Sensitize and scale up the data (to increase range for AI training)
+    packet.type = type;
+    packet.AccX =  IMU.AccX_moving_average_hull * ACCEL_SCALING_FACTOR;
+    packet.AccY =  IMU.AccY_moving_average_hull * ACCEL_SCALING_FACTOR;
+    packet.AccZ =  IMU.AccZ_moving_average_hull * ACCEL_SCALING_FACTOR;
+    packet.GyroX = IMU.GyroX_moving_average_hull * GYRO_SCALING_FACTOR;
+    packet.GyroY = IMU.GyroY_moving_average_hull * GYRO_SCALING_FACTOR;
+    packet.GyroZ = IMU.GyroZ_moving_average_hull * GYRO_SCALING_FACTOR;
+    packet.sequence_number = seq_no;
+    prev_seq_no = seq_no;
+    packet.padding_1 = 0;
+    packet.padding_2 = 0;
+    packet.padding_3 = 0;
+    packet.padding_4 = 0;
+    packet.crcsum = calculateDataCrc32(&packet);
+    Serial.write((uint8_t *)&packet, sizeof(packet));
+//  Serial.write((uint8_t*)&packet.type, sizeof(packet.type));
+//  Serial.write((uint8_t*)&packet.AccX, sizeof(packet.AccX));
+//  Serial.write((uint8_t*)&packet.AccY, sizeof(packet.AccY));
+//  Serial.write((uint8_t*)&packet.AccZ, sizeof(packet.AccZ));
+//  Serial.write((uint8_t*)&packet.GyroX, sizeof(packet.GyroX));
+//  Serial.write((uint8_t*)&packet.GyroY, sizeof(packet.GyroY));
+//  Serial.write((uint8_t*)&packet.GyroZ, sizeof(packet.GyroZ));
+//  Serial.write((uint8_t*)&packet.sequence_number, sizeof(packet.sequence_number));
+//  Serial.write((uint8_t*)&packet.padding_1, sizeof(packet.padding_1));
+//  Serial.write((uint8_t*)&packet.padding_2, sizeof(packet.padding_2));
+//  Serial.write((uint8_t*)&packet.padding_3, sizeof(packet.padding_3));
+//  Serial.write((uint8_t*)&packet.padding_4, sizeof(packet.padding_4));
+//  Serial.write((uint8_t*)&packet.crcsum, sizeof(packet.crcsum));
+    Serial.flush();
+    delay(20);
 }
 
 void hull_moving_average() {
@@ -320,7 +545,7 @@ void see_hma_effectiveness() {
 
 void initialize_MPU() {
   mpu.initialize();
-  Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+//  Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
   /************************* Initialize DMP within the MPU6050 *************************/
   devStatus = mpu.dmpInitialize();
@@ -352,17 +577,19 @@ void initialize_MPU() {
     // DMP is ready
     mpu.setDMPEnabled(true);
     dmpReady = true;
-    Serial.println(F("DMP enabled..."));
+//    Serial.println(F("DMP enabled..."));
    
     // get expected DMP packet size for later comparison. Should be 42 (for our DMP version of 2.x)
     // Note that other DMP versions have different FIFO packet size/layout (e.g. DMP version of 6.x has different size & layout)
     packetSize = mpu.dmpGetFIFOPacketSize();
-  } else {
-    // ERROR!
-    Serial.print(F("DMP Initialization failed (code "));
-    Serial.print(devStatus);
-    Serial.println(F(")"));
-  }
+    mpuConnectionSucceed = true;
+  } 
+//  else {
+//    // ERROR!
+//    Serial.print(F("DMP Initialization failed (code "));
+//    Serial.print(devStatus);
+//    Serial.println(F(")"));
+//  }
 }
 
 void override_system_configs() {  
@@ -494,12 +721,12 @@ void sanity_check() {
   GyroX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
   GyroY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   GyroZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-  Serial.print("AccX = "); Serial.print(AccX);
-  Serial.print(" | AccY = "); Serial.print(AccY);
-  Serial.print(" | AccZ = "); Serial.print(AccZ);
-  Serial.print(" | Tmp = "); Serial.print(Tmp/340.00+36.53);  //equation for temperature in degrees C from datasheet
-  Serial.print(" | GyroX = "); Serial.print(GyroX);
-  Serial.print(" | GyroY = "); Serial.print(GyroY);
-  Serial.print(" | GyroZ = "); Serial.println(GyroZ);
+//  Serial.print("AccX = "); Serial.print(AccX);
+//  Serial.print(" | AccY = "); Serial.print(AccY);
+//  Serial.print(" | AccZ = "); Serial.print(AccZ);
+//  Serial.print(" | Tmp = "); Serial.print(Tmp/340.00+36.53);  //equation for temperature in degrees C from datasheet
+//  Serial.print(" | GyroX = "); Serial.print(GyroX);
+//  Serial.print(" | GyroY = "); Serial.print(GyroY);
+//  Serial.print(" | GyroZ = "); Serial.println(GyroZ);
   delay(333);
 }

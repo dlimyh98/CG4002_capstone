@@ -14,6 +14,42 @@ Adafruit_SH1106 display(OLED_RESET);   // Constructor for SH1106 OLED 'object'
 #define FLASH_PLAYER_ONE_RED_BASE
 //#define FLASH_PLAYER_TWO_BLACK_BASE
 
+struct Ackpacket {
+  uint8_t type; //b
+  uint16_t padding_1; //h
+  uint16_t padding_2; //h
+  uint16_t padding_3; //h
+  uint16_t padding_4; //h
+  uint16_t padding_5; //h
+  uint16_t padding_6; //h
+  uint16_t padding_7; //h
+  uint8_t padding_8; //b
+  uint32_t crcsum; //i
+};
+
+struct Datapacket {
+  uint8_t type;
+  uint16_t bullet_count;
+  uint16_t shot_fired;
+  uint16_t padding_1;
+  uint16_t padding_2;
+  uint16_t padding_3;
+  uint16_t padding_4;
+  uint16_t sequence_number;
+  uint8_t padding_5;
+  uint32_t crcsum;
+};
+
+uint8_t seq_no;
+uint8_t prev_seq_no;
+uint16_t shot_fired;
+char currentState;
+bool sentHandshakeAck;
+char msg;
+unsigned long lastPacketSentTime = 0;
+
+Datapacket sentPackets[1]; // Only store prev sent packet due to memory
+
 const unsigned char image_bullets[MAX_NUM_AMMO+1][1024] PROGMEM = {
   { // 'bullets_0, 128x64px
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
@@ -508,26 +544,134 @@ void handle_reset_switch();
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   OLED_init();
   gun_init();
-  IR_transmit_init();
   reset_switch_init();
+  resetFlags();
 }
 
 void loop()
 {
+  if (Serial.available()) {
+    if (Serial.peek() == 'g') 
+      currentState = Serial.read();
+    if (Serial.peek() == 'h') 
+      currentState = Serial.read();
+  }
 
-  handle_gun_firing();
-  handle_reset_switch();
-  handle_internal_comms();
+  if (currentState != 'x') {
+    switch(currentState) {
+      case 's':
+        handle_gun_firing();
+        handle_reset_switch();
+        sendBeetleData(5); // BEETLE NUMBER
+        lastPacketSentTime = millis();
+        shot_fired = 0; // reset shot_fired everytime packet sends, regardless.
+        break;
+      case 'g':
+        if (Serial.available() >= sizeof(uint8_t)) {
+          uint8_t receivedByte = Serial.read();
+          ammo_remaining = receivedByte;
+          setStateToSend();
+        }
+        break;
+      case 'h':
+        resetFlags();
+        sendHandshakeAck();
+        waitForHandshakeAck();
+        break;
+      case 'i':
+        IR_transmit_init();
+        delay(1000);
+        setStateToSend();
+        break;
+      default:
+        resetFlags();
+        break;
+    }
+    
+  }
 }
 
-void handle_internal_comms() {
-  // Need to update bullet count
-  //int received_bullet_count = Serial.read();
-  //ammo_remaining = received_bullet_count;
+//================ Handshake =================
+
+void sendHandshakeAck() {
+  if (sentHandshakeAck) return;
+  Ackpacket packet;
+  packet.type = 1; // ACK
+  packet.padding_1 = 0;
+  packet.padding_2 = 0;
+  packet.padding_3 = 0;
+  packet.padding_4 = 0;
+  packet.padding_5 = 0;
+  packet.padding_6 = 0;
+  packet.padding_7 = 0;
+  packet.padding_8 = 0;
+  packet.crcsum = calculateAckCrc32(&packet);
+  Serial.write((uint8_t *)&packet, sizeof(packet));
+  sentHandshakeAck = true;
 }
+
+void waitForHandshakeAck(){
+  char ack_msg;
+
+  while (!Serial.available());
+  ack_msg = Serial.read();
+
+  if (ack_msg != 'v') {
+    resetFlags();
+    return;
+  }
+
+  setStateToIrReceive();
+
+}
+
+void resetFlags() {
+  sentHandshakeAck = false;
+  seq_no = 0;
+}
+
+//=======================================================
+//================ State Machine =================
+void setStateToHandshake() {
+  currentState = 'h';
+  sentHandshakeAck = false;
+}
+
+void setStateToIrReceive(){
+  currentState = 'i';
+}
+
+void setStateToSend() {
+  currentState = 's';
+}
+
+void setStateToGamestate(){
+  currentState = 'g';
+}
+
+//=======================================================
+//================ Data handling and transmission =================
+void sendBeetleData(uint8_t type) {
+  Datapacket packet;
+  packet.type = type;
+  packet.sequence_number = seq_no;
+  prev_seq_no = seq_no;
+  if(seq_no < 10){
+    seq_no++; // Increment the sequence number for the next packet
+  } else {
+    seq_no = 0;
+  }
+  packet.bullet_count = ammo_remaining; // Update bullet count
+  packet.shot_fired = shot_fired;
+  packet.crcsum = calculateDataCrc32(&packet);
+  sentPackets[0] = packet;
+  Serial.write((uint8_t *)&packet, sizeof(packet));
+  delay(40);
+}
+//===========================================================
 
 void handle_gun_firing() {
   int reading = digitalRead(GUN_TRIGGER_PIN);
@@ -542,10 +686,11 @@ void handle_gun_firing() {
       if (reading != current_gun_trigger_pin_state) {
         // assert that reading is NOT due to debouncing
         current_gun_trigger_pin_state = reading;
-        ammo_remaining = (ammo_remaining == 0 && current_gun_trigger_pin_state == HIGH) ? 0 :
-                         (current_gun_trigger_pin_state == LOW) ? ammo_remaining : ammo_remaining - 1;
+//        ammo_remaining = (ammo_remaining == 0 && current_gun_trigger_pin_state == HIGH) ? 0 :
+//                         (current_gun_trigger_pin_state == LOW) ? ammo_remaining : ammo_remaining - 1;
 
-        if (current_gun_trigger_pin_state == HIGH) {
+        if (current_gun_trigger_pin_state == HIGH && ammo_remaining != 0) {
+          shot_fired = 1;
           IR_transmit();
         }
     }
@@ -636,4 +781,52 @@ void reset_switch_init() {
   last_reset_switch_state = HIGH;    // Pin is in active high configuration
   last_debounce_time_reset_switch = 0;
   debounce_delay_reset_switch = 100;
+}
+
+//========================Calculate CRC======================
+
+uint32_t calculateDataCrc32(Datapacket *pkt) {
+  return custom_crc32(&pkt->type, 
+    sizeof(pkt->type) +
+    sizeof(pkt->bullet_count) +
+    sizeof(pkt->shot_fired) +
+    sizeof(pkt->padding_1) +
+    sizeof(pkt->padding_2) +
+    sizeof(pkt->padding_3) +
+    sizeof(pkt->padding_4) +
+    sizeof(pkt->sequence_number) +
+    sizeof(pkt->padding_5)
+  );
+}
+
+uint32_t calculateAckCrc32(Ackpacket *pkt) {
+  return custom_crc32(&pkt->type, 
+    sizeof(pkt->type) +
+    sizeof(pkt->padding_1) +
+    sizeof(pkt->padding_2) +
+    sizeof(pkt->padding_3) +
+    sizeof(pkt->padding_4) +
+    sizeof(pkt->padding_5) +
+    sizeof(pkt->padding_6) +
+    sizeof(pkt->padding_7) +
+    sizeof(pkt->padding_8)
+  );
+}
+
+//===========================================================
+
+//====================Custom CRC Library======================
+
+
+uint32_t custom_crc32(const uint8_t *data, size_t len) {
+  uint32_t crc = 0x00000000;
+  
+  for (size_t i = 0; i < len; i++) {
+    crc ^= data[i];
+    for (int j = 0; j < 8; j++) {
+      crc = (crc & 1) ? ((crc >> 1) ^ 0x04C11DB7) : (crc >> 1);
+    }
+  }
+  
+  return crc;
 }
