@@ -7,7 +7,7 @@ from relay_node_server import RelayNodeServer
 from eval_client import EvalClient
 from visualizer_ultra96 import VisualizerClient
 from game_engine import GameEngine
-# from ai_main import MainApp
+from ai_main import MainApp
 
 # define constants
 RELAY_NODE_SERVER_HOST = '0.0.0.0'
@@ -38,7 +38,7 @@ class Ultra96:
         self.eval_client = EvalClient(ULTRA96_SERVER_IP, SECRET_KEY, HANDSHAKE_PASSWORD)
         self.visuazlier_client = VisualizerClient()
         self.game_engine = GameEngine()
-        # self.ai_predictor = MainApp(self.loop)
+        self.ai_predictor = MainApp(self.loop)
         self.is_running = True
 
     async def run(self):
@@ -50,14 +50,14 @@ class Ultra96:
                 asyncio.create_task(self.relay_node_server.start()),  
                 asyncio.create_task(self.visuazlier_client.start()),
                 asyncio.create_task(self.game_engine.async_start()),
-                # asyncio.create_task(self.ai_predictor.async_start()),
+                asyncio.create_task(self.ai_predictor.async_start()),
 
                 asyncio.create_task(self.redirect_RelayNode_to_AI_or_GameEngine()),
                 asyncio.create_task(self.redirect_AI_to_GameEngine_and_VisualizerClient()),
                 asyncio.create_task(self.redirect_GameEngine_to_EvalClient_and_VisualizerClient_and_RelayNodeServer()),
 
                 asyncio.create_task(self.redirect_EvalClient_to_GameEngine()),
-                asyncio.create_task(self.redirect_Visualizer_to_GameEngine()),
+                asyncio.create_task(self.redirect_Visualizer_to_GameEngine())
                 # asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
             )
         except KeyboardInterrupt:
@@ -89,7 +89,7 @@ class Ultra96:
                     await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data[1:7])
                     logging.info(f"[RelayNode->AI/GameEngine]: Data to AI: {data[1:7]}")
                 # gun or vest
-                elif data[0] == BEETLE_TWO_DATA or data[0] == BEETLE_FOUR_DATA:
+                elif data[0] == BEETLE_TWO_DATA or data[0] == BEETLE_THREE_DATA or data[0] == BEETLE_FOUR_DATA:
                     await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
                     logging.info(f"[RelayNode->AI/GameEngine]: Data to Game Engine: {data}")
 
@@ -106,12 +106,24 @@ class Ultra96:
 
         try:
             while self.is_running:
-                logging.info("[AI->GameEngine, VisualizerClient:Action]: Enter pipeline.")   
+                logging.info("[AI->GameEngine]: Enter pipeline.")   
                 # dequeue output data from AI
                 data = await self.loop.run_in_executor(None, self.ai_predictor.output_queue.get)
+                actions = ["gun",  "web", "grenade",
+                    "portal", "punch", "hammer", "spear"]
+                utility_actions = ["shield", "reload", "logout"]
+                processed_data = data
 
-                await self.visuazlier_client.send_queue.put(data)
+
+                if data in actions:
+                    processed_data = f'{{"type":"action","player_id":"player1","action_type":"{data}","target_id":"player2"}}'
+
+                elif data in utility_actions:
+                    processed_data = f'{{"type":"utility","player_id":"player1","utility_type":"{data}"}}'
+
+                await self.visuazlier_client.send_queue.put(processed_data)
                 await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
+
                 logging.info(f"[AI->GameEngine, VisualizerClient:Action]: Data to GameEngine, VisualizerClient: {data}")
                 logging.info("[AI->GameEngine, VisualizerClient:Action]: Exit pipeline.")
         except asyncio.CancelledError:
@@ -134,15 +146,19 @@ class Ultra96:
                 eval_client_data_json = json.loads(eval_client_data)
                 p1_hp = eval_client_data_json['game_state']['p1']['hp']
                 p1_bullets = eval_client_data_json['game_state']['p1']['bullets']
-                tuple = str((p1_hp, p1_bullets))
-                #tuple = str((60, 3))
-                await self.relay_node_server.send_queue.put(tuple)   
-                logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: {tuple}") 
+                tuple1 = str(('h', p1_hp)) + '|'
+                tuple2 = str(('b', p1_bullets)) + '|'
+                await self.relay_node_server.send_queue.put(tuple1)
+                logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: (HP) {tuple1}") 
+                await self.relay_node_server.send_queue.put(tuple2)      
+                logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: (BULLET) {tuple2}") 
          
+
                 await self.eval_client.send_queue.put(eval_client_data)
+                logging.info(f"[GameEngine->EvalClient, VisualizerClient, RelayNodeServer]: Data to eval_client: {eval_client_data}")
                 await self.visuazlier_client.send_queue.put(data)
-                logging.info(f"[GameEngine->EvalClient, VisualizerClient]: Data to both clients: {data}")
-                logging.info("[GameEngine->EvalClient, VisualizerClient]: Exit pipeline.")
+                logging.info(f"[GameEngine->EvalClient, VisualizerClient, RelayNodeServer]: Data to visualizer: {data}")
+                logging.info("[GameEngine->EvalClient, VisualizerClient, RelayNodeServer]: Exit pipeline.")
         except asyncio.CancelledError:
             return
         except Exception as e:
@@ -174,6 +190,10 @@ class Ultra96:
                 logging.info("[Visualizer->GameEngine]: Enter pipeline.")
                 data = await self.visuazlier_client.receive_queue.get()
 
+                # reconstruct packet from confirmation to eval client method
+
+
+                # put into eval client's send_queue instead of piping it back into game engine
                 await self.loop.run_in_executor(None, self.game_engine.data_input_queue.put, data)
                 logging.info(f"[Visualizer->GameEngine]: Data to GameEngine: {data}")
                 logging.info("[Visualizer->GameEngine]: Exit pipeline.")

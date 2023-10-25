@@ -34,6 +34,7 @@ class RelayNodeServer:
         while self.is_running:
             await asyncio.sleep(10)  # sleep for 10 seconds
             avg_per_second = self.packet_count / 10  # calculate average per second
+            logging.info(f"[RelayNodeServer]: Average packets received per second over the last 10 seconds: {avg_per_second}")
             print(f"Average packets received per second over the last 10 seconds: {avg_per_second}")
             self.packet_count = 0  # reset the packet count
     
@@ -111,7 +112,7 @@ class RelayNodeServer:
             elif (pkt_id == BEETLE_THREE_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
-                return pkt_data
+                return pkt_data [0:2]
 
             # Gun Beetle 1 No Ack
             elif (pkt_id == BEETLE_FOUR_DATA):
@@ -122,7 +123,7 @@ class RelayNodeServer:
             # Glove Beetle 1
             elif (pkt_id == BEETLE_FIVE_DATA):
                 pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
-                return pkt_data
+                return pkt_data [0:7]
             
             # Gun Beetle 2 No ack
             elif (pkt_id == BEETLE_SIX_DATA):
@@ -147,7 +148,7 @@ class RelayNodeServer:
             logging.info("Relay Node server starting:")
             self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
 
-            # frequency_display_task = asyncio.create_task(self.display_frequency())
+            frequency_display_task = asyncio.create_task(self.display_frequency())
 
             try: 
                 async with self.server:
@@ -170,7 +171,7 @@ class RelayNodeServer:
         if self.server:
             self.server.close()
             await self.server.wait_closed()
-            print("Realy Node server stopped.")
+            print("Relay Node server stopped.")
 
 
 def main():

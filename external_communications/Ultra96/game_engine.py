@@ -6,11 +6,11 @@ import logging
 import asyncio
 
 # constants for received messages
-VEST = 3
+VEST = 4
 GUN = 5
 
-possible_actions = ["gun", "shield", "reload", "web",
-                    "portal", "punch", "hammer", "spear"]
+possible_actions = ["gun", "shield", "reload", "web", "grenade",
+                    "portal", "punch", "hammer", "spear", "logout"]
 
 class Player:
     maxHealth = 100
@@ -51,32 +51,6 @@ class GameEngine:
         self.lock = threading.Lock()
         self.loop = None
 
-    def log_message_format(self, message):
-        # Check if it's a string
-        if isinstance(message, str):
-            logging.info(f"[FormatLogger]: Data is of type STRING: {message}")
-            
-            # Try to decode the string to see if it's valid JSON
-            try:
-                decoded = json.loads(message)
-                logging.info(f"[FormatLogger]: STRING is valid JSON: {decoded}")
-                if isinstance(decoded, dict):
-                    logging.info(f"[FormatLogger]: Decoded JSON is of type DICT.")
-                elif isinstance(decoded, list):
-                    logging.info(f"[FormatLogger]: Decoded JSON is of type LIST.")
-                # ... You can add more type checks for the decoded JSON as needed.
-            except json.JSONDecodeError:
-                logging.info(f"[FormatLogger]: STRING is not valid JSON.")
-        # Check if it's a dictionary
-        elif isinstance(message, dict):
-            logging.info(f"[FormatLogger]: Data is of type DICT: {message}")
-        # Check if it's a tuple
-        elif isinstance(message, tuple):
-            logging.info(f"[FormatLogger]: Data is of type TUPLE: {message}")
-        # ... You can add more type checks as needed.
-        else:
-            logging.info(f"[FormatLogger]: Data is of type {type(message).__name__}: {message}")
-
     def game_processing_thread(self):
         while True:
             if not self.data_input_queue.empty():
@@ -84,21 +58,19 @@ class GameEngine:
                 logging.info(f"[GameEngine]: Raw Message: {raw_message}")
 
                 # unpack relay node server packet/AI packet here
-                message = self.process_message(raw_message) 
-                logging.info(f"[GameEngine]: process_message output: {message}")
-                self.log_message_format(message)
-                action = self.process_action(message) # this message is of type dict
+                message = self.process_message(raw_message)
+                #print(f"[GameEngine]: process_message output: {message}")
 
-                message = json.dumps(message)
+                action = self.process_action(message)
 
-                self.log_message_format(message)
-                self.log_message_format(action)
-
-                message = json.loads(message)
+                #message = json.dumps(message)
+                
                 msg_type = message.get('type')
                 
                 if msg_type == 'action':
                     self.handle_action(message)
+                    if action != "gun":
+                        self.send_entire_state(action)
 
                 elif msg_type == 'utility':
                     self.handle_utility(message)
@@ -106,7 +78,8 @@ class GameEngine:
                     
                 elif msg_type == 'confirmation':
                     self.handle_confirmation(message)
-                    self.send_entire_state(action)
+                    if action == 'gun':
+                        self.send_entire_state(action)
                 
                 elif msg_type == 'eval_game_state':
                     self.handle_eval_game_state(message)
@@ -125,7 +98,7 @@ class GameEngine:
             # AI
             if action in possible_actions:
                 logging.info("[GameEngine] process_messsage: Incoming from AI")
-                if action == "shield" or action == "reload":
+                if action == "shield" or action == "reload" or action == "logout":
                     action_message = {
                         "type": "utility",
                         "player_id": "player1",
@@ -144,14 +117,20 @@ class GameEngine:
             elif 'type' in message:
                 logging.info("[GameEngine] process_messsage: Incoming from VizClient")
                 # return json.dumps(message)
-                self.log_message_format(message)
+                # self.log_message_format(message)
                 return json.loads(message)
             # message is from eval client
             else:
                 logging.info("[GameEngine] process_messsage: Incoming from EvalClient")
-                game_state_message = self.convert_state_for_game_engine(json.loads(message))
+                try:
+                    game_state_message = self.convert_state_for_game_engine(json.loads(message))
+                    return game_state_message
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing JSON: {e}")
+                # Handle the error accordingly (e.g., log it, return an error message, etc.)
+
                 # return json.dumps(game_state_message)
-                return game_state_message
+                
         
         if isinstance(message, tuple):
             logging.info("[GameEngine]: IS TUPLE")
@@ -161,10 +140,11 @@ class GameEngine:
             # if vest, construct confirmation (hit/miss) message
             if message[0] == GUN:
                 if message[2] == 1:
+                    logging.info("[GameEngine]: GUN FIRED")
                     action_message = {
                         "type": "action",
                         "player_id": "player1",
-                        "action_type": "shoot",
+                        "action_type": "gun",
                         "target_id": "player2"
                     }
                     # return json.dumps(action_message)
@@ -177,20 +157,22 @@ class GameEngine:
                     action_data = {
                         "type": "confirmation",
                         "player_id": "player1",
-                        "action_type": "shoot",
+                        "action_type": "gun",
                         "target_id": "player2",
                         "hit": hit_var
                     }
                     # action_message = json.dumps(action_data)
+                    logging.info("[GameEngine]: VEST HIT")
                     return action_data
                 else:
                     action_data = {
                         "type": "confirmation",
                         "player_id": "player1",
-                        "action_type": "shoot",
+                        "action_type": "gun",
                         "target_id": "player2",
                         "hit": hit_var
                     }
+                    logging.info("[GameEngine]: VEST FALSE")
                     action_message = action_data
                     logging.info(f"[GameEngine] Vest action_message: {action_message}")
                     return action_message
@@ -199,7 +181,7 @@ class GameEngine:
     def process_action(self, message):
         json_message = message
         logging.info(f"[GameEngine: process_action]: {json_message}")
-        self.log_message_format(json_message)
+        # self.log_message_format(json_message)
         return json_message.get('action_type')
 
     def handle_action(self, action_data):
@@ -217,7 +199,7 @@ class GameEngine:
                 acting_player.currentBullets -= 1
 
     def handle_utility(self, utility_data):
-        utility_type = utility_data['utility_type']
+        utility_type = utility_data['type']
         player_id = utility_data['player_id']
 
         acting_player = self.player1 if player_id == "player1" else self.player2
@@ -240,6 +222,8 @@ class GameEngine:
 
         for attr, value in player2_data.items():
             setattr(self.player2, attr, value) 
+        
+        logging.info("[GameEngine]: Game state updated.")
                 
     def handle_confirmation(self, confirmation_data):
         #print("handle_confirmation is called")
@@ -301,6 +285,7 @@ class GameEngine:
     
     def convert_state_for_game_engine(self, eval_client_state):
         # Extract player information
+        # print(f"EVALCLIENT STATE: {eval_client_state}")
         p1 = eval_client_state["p1"]
         p2 = eval_client_state["p2"]
 
@@ -355,7 +340,7 @@ class GameEngine:
             "player1": vars(self.player1),
             "player2": vars(self.player2)
         }
-        self.data_output_queue.put(json.dumps(state))
+        self.eval_client_output_queue.put(json.dumps(state))
 
     # def data_output_thread(self):
     #     while True:

@@ -1,15 +1,524 @@
-2023-10-15 15:14:59,673 - DEBUG - Using proactor: IocpProactor
-2023-10-15 15:14:59,676 - INFO - Ultra96 starting...
-2023-10-15 15:15:49,362 - INFO - Relay Node server starting:
-2023-10-15 15:15:50,180 - INFO - Connected to eval_server at 127.0.0.1:48589.
-2023-10-15 15:15:50,180 - INFO - EvalClient: Sent handshake.
-2023-10-15 15:15:50,181 - INFO - Relay Node server listening on 0.0.0.0:8080
-2023-10-15 15:15:50,479 - INFO - Visualizer Client: CONNACK received with code 0.
-2023-10-15 15:15:50,787 - INFO - Subscribed topic: test
-2023-10-15 15:16:22,868 - INFO - Stopping Ultra96...
-2023-10-15 15:16:22,869 - INFO - Eval Client stopped.
-2023-10-15 15:16:22,870 - ERROR - unhandled exception during asyncio.run() shutdown
-task: <Task finished name='Task-1' coro=<main() done, defined at C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py:173> exception=TypeError('An asyncio.Future, a coroutine or an awaitable is required')>
+2023-10-18 17:08:34,807 - INFO - Ultra96 starting...
+2023-10-18 17:08:41,564 - INFO - Relay Node server starting:
+2023-10-18 17:08:42,191 - INFO - [RelayNode->AI/GameEngine]: Enter pipeline.
+2023-10-18 17:08:42,206 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:08:42,206 - INFO - [GameEngine->EvalClient, VisualizerClient]: Enter pipeline.
+2023-10-18 17:08:42,222 - INFO - Game Engine started.
+2023-10-18 17:08:42,222 - INFO - [EvalClient->GameEngine]: Enter pipeline.
+2023-10-18 17:08:42,238 - INFO - [Visualizer->GameEngine]: Enter pipeline.
+2023-10-18 17:08:42,370 - INFO - Connected to eval_server at 127.0.0.1:6622.
+2023-10-18 17:08:42,386 - INFO - EvalClient: Sent handshake.
+2023-10-18 17:08:42,458 - INFO - Visualizer Client: CONNACK received with code 0.
+2023-10-18 17:08:42,471 - INFO - Relay Node server listening on 0.0.0.0:8080
+2023-10-18 17:08:42,771 - INFO - Subscribed topic: test2
+2023-10-18 17:08:52,250 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:08:52,250 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:08:52,250 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:08:52,250 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:08:52,250 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:08:52,250 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:08:57,270 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:08:57,270 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:08:57,270 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:09:07,283 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:09:07,283 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:09:07,285 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:09:07,285 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:07,285 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:09:07,285 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:09:08,180 - INFO - [VisualizerClient on_message]: ('test2', '{"type":"confirmation","player_id":"player1","action_type":"grenade","target_id":"player2","hit":true}')
+2023-10-18 17:09:08,280 - INFO - [GameEngine]: Raw Message: {"type":"confirmation","player_id":"player1","action_type":"grenade","target_id":"player2","hit":true}
+2023-10-18 17:09:08,281 - INFO - [GameEngine]: process_message message: {"type":"confirmation","player_id":"player1","action_type":"grenade","target_id":"player2","hit":true}
+2023-10-18 17:09:08,281 - INFO - [GameEngine] process_messsage: Incoming from VizClient
+2023-10-18 17:09:08,281 - INFO - [Visualizer->GameEngine]: Data to GameEngine: {"type":"confirmation","player_id":"player1","action_type":"grenade","target_id":"player2","hit":true}
+2023-10-18 17:09:08,281 - INFO - [FormatLogger]: Data is of type STRING: {"type":"confirmation","player_id":"player1","action_type":"grenade","target_id":"player2","hit":true}
+2023-10-18 17:09:08,281 - INFO - [Visualizer->GameEngine]: Exit pipeline.
+2023-10-18 17:09:08,281 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'confirmation', 'player_id': 'player1', 'action_type': 'grenade', 'target_id': 'player2', 'hit': True}
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:08,282 - INFO - [GameEngine]: process_message output: {'type': 'confirmation', 'player_id': 'player1', 'action_type': 'grenade', 'target_id': 'player2', 'hit': True}
+2023-10-18 17:09:08,282 - INFO - [Visualizer->GameEngine]: Enter pipeline.
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'confirmation', 'player_id': 'player1', 'action_type': 'grenade', 'target_id': 'player2', 'hit': True}
+2023-10-18 17:09:08,282 - INFO - [GameEngine: process_action]: {'type': 'confirmation', 'player_id': 'player1', 'action_type': 'grenade', 'target_id': 'player2', 'hit': True}
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'confirmation', 'player_id': 'player1', 'action_type': 'grenade', 'target_id': 'player2', 'hit': True}
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: Data is of type STRING: {"type": "confirmation", "player_id": "player1", "action_type": "grenade", "target_id": "player2", "hit": true}
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'confirmation', 'player_id': 'player1', 'action_type': 'grenade', 'target_id': 'player2', 'hit': True}
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: Data is of type STRING: grenade
+2023-10-18 17:09:08,282 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:09:08,397 - INFO - [GameEngine-> EvalClient, VisualizerClient]: eval_client data: {"player_id": 1, "action": "grenade", "game_state": {"p1": {"hp": 100, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}, "p2": {"hp": 70, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}}}
+2023-10-18 17:09:08,413 - INFO - [FormatLogger]: Data is of type STRING: {"player_id": 1, "action": "grenade", "game_state": {"p1": {"hp": 100, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}, "p2": {"hp": 70, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}}}
+2023-10-18 17:09:08,430 - INFO - [FormatLogger]: STRING is valid JSON: {'player_id': 1, 'action': 'grenade', 'game_state': {'p1': {'hp': 100, 'bullets': 6, 'grenades': 2, 'shield_hp': 0, 'deaths': 0, 'shields': 3}, 'p2': {'hp': 70, 'bullets': 6, 'grenades': 2, 'shield_hp': 0, 'deaths': 0, 'shields': 3}}}
+2023-10-18 17:09:08,446 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:08,463 - INFO - [GameEngine->RelayNodeServer]: Data to RelayNodeServer: (100, 6)
+2023-10-18 17:09:08,480 - INFO - [GameEngine->EvalClient, VisualizerClient]: Data to both clients: {"type": "game_state", "player1": {"currentHealth": 100, "currentShield": 0, "currentBullets": 6, "currentShields": 3, "currentGrenades": 2, "deaths": 0, "isShieldActive": false}, "player2": {"currentHealth": 70, "currentShield": 0, "currentBullets": 6, "currentShields": 3, "currentGrenades": 2, "deaths": 0, "isShieldActive": false}}
+2023-10-18 17:09:08,480 - INFO - [GameEngine->EvalClient, VisualizerClient]: Exit pipeline.
+2023-10-18 17:09:08,496 - INFO - [GameEngine->EvalClient, VisualizerClient]: Enter pipeline.
+2023-10-18 17:09:08,597 - INFO - [EvalServer -> EvalClient:]{"p1": {"hp": 100, "bullets": 6, "grenades": 1, "shield_hp": 0, "deaths": 0, "shields": 3}, "p2": {"hp": 70, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}}
+2023-10-18 17:09:08,626 - INFO - [GameEngine]: Raw Message: {"p1": {"hp": 100, "bullets": 6, "grenades": 1, "shield_hp": 0, "deaths": 0, "shields": 3}, "p2": {"hp": 70, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}}
+2023-10-18 17:09:08,626 - INFO - [GameEngine]: process_message message: {"p1": {"hp": 100, "bullets": 6, "grenades": 1, "shield_hp": 0, "deaths": 0, "shields": 3}, "p2": {"hp": 70, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}}
+2023-10-18 17:09:08,626 - INFO - [GameEngine] process_messsage: Incoming from EvalClient
+2023-10-18 17:09:08,626 - INFO - [EvalClient->GameEngine]: Data to GameEngine: {"p1": {"hp": 100, "bullets": 6, "grenades": 1, "shield_hp": 0, "deaths": 0, "shields": 3}, "p2": {"hp": 70, "bullets": 6, "grenades": 2, "shield_hp": 0, "deaths": 0, "shields": 3}}
+2023-10-18 17:09:08,626 - INFO - [EvalClient->GameEngine]: Exit pipeline.
+2023-10-18 17:09:08,626 - INFO - [EvalClient->GameEngine]: Enter pipeline.
+2023-10-18 17:09:08,626 - INFO - [GameEngine]: process_message output: {'type': 'game_state', 'player1': {'currentHealth': 100, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 1, 'deaths': 0, 'isShieldActive': False}, 'player2': {'currentHealth': 70, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 2, 'deaths': 0, 'isShieldActive': False}}
+2023-10-18 17:09:08,626 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'game_state', 'player1': {'currentHealth': 100, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 1, 'deaths': 0, 'isShieldActive': False}, 'player2': {'currentHealth': 70, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 2, 'deaths': 0, 'isShieldActive': False}}
+2023-10-18 17:09:08,626 - INFO - [GameEngine: process_action]: {'type': 'game_state', 'player1': {'currentHealth': 100, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 1, 'deaths': 0, 'isShieldActive': False}, 'player2': {'currentHealth': 70, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 2, 'deaths': 0, 'isShieldActive': False}}
+2023-10-18 17:09:08,630 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'game_state', 'player1': {'currentHealth': 100, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 1, 'deaths': 0, 'isShieldActive': False}, 'player2': {'currentHealth': 70, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 2, 'deaths': 0, 'isShieldActive': False}}
+2023-10-18 17:09:08,630 - INFO - [FormatLogger]: Data is of type STRING: {"type": "game_state", "player1": {"currentHealth": 100, "currentShield": 0, "currentBullets": 6, "currentShields": 3, "currentGrenades": 1, "deaths": 0, "isShieldActive": false}, "player2": {"currentHealth": 70, "currentShield": 0, "currentBullets": 6, "currentShields": 3, "currentGrenades": 2, "deaths": 0, "isShieldActive": false}}
+2023-10-18 17:09:08,630 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'game_state', 'player1': {'currentHealth': 100, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 1, 'deaths': 0, 'isShieldActive': False}, 'player2': {'currentHealth': 70, 'currentShield': 0, 'currentBullets': 6, 'currentShields': 3, 'currentGrenades': 2, 'deaths': 0, 'isShieldActive': False}}
+2023-10-18 17:09:08,630 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:08,630 - INFO - [FormatLogger]: Data is of type NoneType: None
+2023-10-18 17:09:12,302 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:09:12,318 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:09:12,333 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:09:22,377 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:09:22,377 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:09:22,378 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:09:22,378 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:22,378 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:09:22,378 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:09:27,427 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:09:27,427 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:09:27,444 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:09:37,484 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:09:37,484 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:09:37,484 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:09:37,484 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:37,484 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:09:37,484 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:09:42,509 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:09:42,525 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:09:42,541 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:09:52,579 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:09:52,579 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:09:52,579 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:09:52,579 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:52,579 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:09:52,579 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:09:57,607 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:09:57,623 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:09:57,624 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:10:07,685 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:10:07,685 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:10:07,685 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:10:07,685 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:07,685 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:10:07,685 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:10:12,711 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:10:12,731 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:10:12,742 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:10:22,761 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:10:22,761 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:10:22,761 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:10:22,761 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:22,761 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:10:22,761 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:10:27,785 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:10:27,785 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:10:27,785 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:10:37,801 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:10:37,801 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:10:37,801 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:10:37,801 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:37,801 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:10:37,801 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:10:42,825 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:10:42,842 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:10:42,859 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:10:52,900 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:10:52,900 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:10:52,900 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:10:52,900 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:52,900 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:10:52,900 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:10:57,931 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:10:57,946 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:10:57,962 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:11:07,983 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:11:07,983 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:11:07,983 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:11:07,983 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:07,983 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:11:07,983 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:11:13,001 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:11:13,014 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:11:13,029 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:11:23,060 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:11:23,060 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:11:23,060 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:11:23,060 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:23,060 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:11:23,060 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:11:28,091 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:11:28,107 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:11:28,107 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:11:38,116 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:11:38,116 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:11:38,116 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:11:38,116 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:38,116 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:11:38,116 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:11:43,136 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:11:43,151 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:11:43,151 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:11:53,178 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:11:53,178 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:11:53,178 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:11:53,178 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:53,178 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:11:53,178 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:11:58,196 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:11:58,196 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:11:58,196 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:12:08,242 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:12:08,242 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:12:08,242 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:12:08,242 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:08,242 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:12:08,242 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:12:13,268 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:12:13,283 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:12:13,299 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:12:23,316 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:12:23,316 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:12:23,316 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:12:23,316 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:23,316 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:12:23,316 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:12:28,334 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:12:28,350 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:12:28,365 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:12:38,394 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:12:38,394 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:12:38,394 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:12:38,394 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:38,394 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:12:38,394 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:12:43,418 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:12:43,418 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:12:43,418 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:12:53,444 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:12:53,444 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:12:53,444 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:12:53,444 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:53,444 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:12:53,444 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:12:58,460 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:12:58,476 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:12:58,476 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:13:08,493 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:13:08,493 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:13:08,493 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:13:08,493 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:08,493 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:13:08,493 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:13:13,514 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:13:13,531 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:13:13,548 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:13:23,585 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:13:23,585 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:13:23,585 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:13:23,585 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:23,585 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:13:23,585 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:13:28,598 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:13:28,612 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:13:28,629 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:13:38,669 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:13:38,669 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:13:38,669 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:13:38,669 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:38,669 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:38,669 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:38,669 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:38,669 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:13:38,669 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:38,669 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:13:38,669 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:13:38,672 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:13:43,693 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:13:43,709 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:13:43,709 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:13:53,742 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:13:53,742 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:13:53,744 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:13:53,744 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:53,744 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:13:53,744 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:13:58,750 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:13:58,774 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:13:58,774 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:14:08,802 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:14:08,802 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:14:08,802 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:14:08,802 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:08,802 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:14:08,802 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:14:13,833 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:14:13,856 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:14:13,856 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:14:23,873 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:14:23,873 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:14:23,873 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:14:23,873 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:23,873 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:14:23,873 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:14:28,901 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:14:28,916 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:14:28,932 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:14:38,997 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:14:38,997 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:14:38,997 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:14:38,997 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:38,997 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:14:38,997 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:14:44,027 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:14:44,042 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:14:44,042 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:14:54,064 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:14:54,064 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:14:54,064 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:14:54,064 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:54,064 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:14:54,064 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:14:59,082 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:14:59,098 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:14:59,113 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:15:09,147 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:15:09,147 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:15:09,147 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:15:09,147 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:09,147 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:15:09,147 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:15:14,163 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:15:14,179 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:15:14,195 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:15:24,231 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:15:24,231 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:15:24,231 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:15:24,231 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:24,231 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:15:24,231 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:15:29,262 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:15:29,279 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:15:29,279 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:15:39,301 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:15:39,301 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:15:39,301 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:15:39,301 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:39,301 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:39,301 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:39,302 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:39,302 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:15:39,302 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:39,302 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:15:39,302 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:15:39,302 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:15:44,323 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:15:44,323 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:15:44,323 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:15:54,345 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:15:54,345 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:15:54,345 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:15:54,345 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:54,345 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:15:54,345 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:15:59,360 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:15:59,376 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:15:59,376 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:16:09,406 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:16:09,406 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:16:09,406 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:16:09,406 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:09,406 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:16:09,406 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:16:14,432 - INFO - [AI->GameEngine, VisualizerClient:Action]: Data to GameEngine: gun
+2023-10-18 17:16:14,448 - INFO - [AI->GameEngine, VisualizerClient:Action]: Exit pipeline.
+2023-10-18 17:16:14,464 - INFO - [AI->GameEngine, VisualizerClient:Action]: Enter pipeline.
+2023-10-18 17:16:24,489 - INFO - [GameEngine]: Raw Message: gun
+2023-10-18 17:16:24,489 - INFO - [GameEngine]: process_message message: gun
+2023-10-18 17:16:24,489 - INFO - [GameEngine] process_messsage: Incoming from AI
+2023-10-18 17:16:24,489 - INFO - [GameEngine]: process_message output: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:24,489 - INFO - [GameEngine: process_action]: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: Data is of type DICT: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: Data is of type STRING: {"type": "action", "player_id": "player1", "action_type": "gun", "target_id": "player2"}
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: STRING is valid JSON: {'type': 'action', 'player_id': 'player1', 'action_type': 'gun', 'target_id': 'player2'}
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: Decoded JSON is of type DICT.
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: Data is of type STRING: gun
+2023-10-18 17:16:24,489 - INFO - [FormatLogger]: STRING is not valid JSON.
+2023-10-18 17:16:25,891 - INFO - Stopping Ultra96...
+2023-10-18 17:16:25,891 - INFO - Eval Client stopped.
+2023-10-18 17:16:25,894 - ERROR - unhandled exception during asyncio.run() shutdown
+task: <Task finished name='Task-1' coro=<main() done, defined at C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py:229> exception=TypeError('An asyncio.Future, a coroutine or an awaitable is required')>
 Traceback (most recent call last):
   File "C:\Users\Alwin Ang\AppData\Local\Programs\Python\Python310\lib\asyncio\runners.py", line 44, in run
     return loop.run_until_complete(main)
@@ -30,19 +539,19 @@ KeyboardInterrupt
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 41, in run
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 48, in run
     await asyncio.gather(
 asyncio.exceptions.CancelledError
 
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 176, in main
-    await ultra96.run()
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 55, in run
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 232, in main
+    try:
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 69, in run
     await self.stop()
-  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 164, in stop
-    await asyncio.gather(
+  File "C:\Users\Alwin Ang\OneDrive - National University of Singapore\Y4S1\CG4002\CG4002_capstone\external_communications\Ultra96\main.py", line 220, in stop
+    )
   File "C:\Users\Alwin Ang\AppData\Local\Programs\Python\Python310\lib\asyncio\tasks.py", line 783, in gather
     fut = _ensure_future(arg, loop=loop)
   File "C:\Users\Alwin Ang\AppData\Local\Programs\Python\Python310\lib\asyncio\tasks.py", line 630, in _ensure_future

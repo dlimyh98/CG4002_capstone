@@ -104,7 +104,7 @@ class EvalClient:
                     break
                 msg = data.decode("utf8")
                 await self.receive_queue.put(msg)
-                print("[EvalServer -> EvalClient:]" + msg)
+                # print("[EvalServer -> EvalClient:]" + msg)
                 logging.info("[EvalServer -> EvalClient:]" + msg)
         except ConnectionResetError:
             print("Connection reset.")

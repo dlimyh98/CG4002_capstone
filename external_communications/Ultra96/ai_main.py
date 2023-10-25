@@ -1,22 +1,18 @@
-# main.py
-
 import pandas as pd
-import threading
-import asyncio
+from ai_MLPClassifier import MLPClassifier30
 import time
+import asyncio
 import queue
-
-from ai_MLPClassifier import MLPClassifier
+import threading
 
 class MainApp(threading.Thread):
 
     def __init__(self, loop):
         super().__init__()
+        self.mlp = MLPClassifier30()
         # self.data_source = pd.read_csv(csv_file, chunksize=1)  # Read one row at a time to simulate streaming
-        # self.input_queue = queue.Queue()
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
-        self.mlp = MLPClassifier()
 
         self.loop = loop    
         self.loop_ready = threading.Event()
@@ -34,20 +30,19 @@ class MainApp(threading.Thread):
                 data = self.input_queue.get()
                 action = self.mlp.handle_sample(data)
                 if action is not None:
-                    print(action)
                     self.output_queue.put(action)
+                # self.mlp.record_sample(data)
                 
             except Exception as e:
                 print(f"MainApp error: {e}")
-
 
     async def async_start(self):
         self.loop = asyncio.get_event_loop()
         await self.loop.run_in_executor(None, self.start)
         print("AI started.")
 
-# if __name__ == '__main__':
-#     app = MainApp('../data/fist_raw.csv')
-#     time.sleep(5)
-#     app.run()
 
+if __name__ == '__main__':
+    # app = MainApp('../data/spear_raw.csv')
+    app = MainApp()
+    app.run()
