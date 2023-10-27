@@ -3,6 +3,7 @@ import queue
 import json
 import logging
 import asyncio
+import json
 
 # constants for received messages
 # this should expand to player 1 and 2 later
@@ -162,7 +163,7 @@ class GameEngine:
                 game_state = self.eval_client_input_queue.get()
 
                 # update game state
-
+                self.update_game_state(game_state)
                 # send back player HP and bullet count back to Relay Node server
                 # break down tuple here
                 dummy_tuple = (1, 2)
@@ -228,8 +229,7 @@ class GameEngine:
             damage = 10 if hit else 0  
 
         self.apply_damage(target_player, damage)
-
-    
+ 
     def apply_damage(self, target_player, damage):
         #print(f"Inside apply_damage, applying {damage} damage to {target_player}")
         if target_player.isShieldActive:
@@ -246,9 +246,129 @@ class GameEngine:
                 target_player.deaths += 1
                 target_player.respawn()
 
-    def construct_visualizer_packet(self, action):
-        return
+#########################(Added by your favourite boy Shawn, probably full of bugs. Needs testing)#############################
 
+    # Construct visualizer game_state packet and returns it as a string
+    def construct_visualizer_game_state_packet(player1, player2):
+        """
+        Construct visualizer game_state packet and returns it as a string.
+        
+        Example:
+        {
+            "type": "game_state", 
+            "player1": {
+                "currentHealth": 70, 
+                "currentShield": 0, 
+                "currentBullets": 6, 
+                "currentShields": 3, 
+                "currentGrenades": 1, 
+                "deaths": 0, 
+                "isShieldActive": false
+            }, 
+            "player2": {
+                "currentHealth": 60, 
+                "currentShield": 0, 
+                "currentBullets": 5, 
+                "currentShields": 3, 
+                "currentGrenades": 2, 
+                "deaths": 0, 
+                "isShieldActive": false
+            }
+        }
+        """
+        packet = {
+            "type": "game_state",
+            "player1": {
+                "currentHealth": player1.currentHealth,
+                "currentShield": player1.currentShield,
+                "currentBullets": player1.currentBullets,
+                "currentShields": player1.currentShields,
+                "currentGrenades": player1.currentGrenades,
+                "deaths": player1.deaths,
+                "isShieldActive": player1.isShieldActive
+            },
+            "player2": {
+                "currentHealth": player2.currentHealth,
+                "currentShield": player2.currentShield,
+                "currentBullets": player2.currentBullets,
+                "currentShields": player2.currentShields,
+                "currentGrenades": player2.currentGrenades,
+                "deaths": player2.deaths,
+                "isShieldActive": player2.isShieldActive
+            }
+        }
+        
+        return json.dumps(packet)
+    
+    # Construct visualizer action packet and returns it as a string, player_id is either "1" or "2"
+    def construct_visualizer_action_packet(player_id, action):
+        """
+        Construct visualizer action packet and returns it as a string.
+        
+        Example:
+        {
+            "type":"action",
+            "player_id":"player2",
+            "action_type":"shoot",
+            "target_id":"player1"
+        }
+        """
+        player_id = "player1" if player_id == 1 else "player2"
+        target_id = "player1" if player_id == 2 else "player2"
+        
+        packet = {
+            "type": "action",
+            "player_id": player_id,
+            "action_type": action,
+            "target_id": target_id
+        }
+        
+        return json.dumps(packet)    
+
+    # Construct visualizer action packet and returns it as a string, player_id is either "1" or "2"
+    def construct_visualizer_utility_packet(player_id, utility_action):
+        """
+        Construct visualizer utility packet and returns it as a string.
+        
+        Example:
+        {
+            "type":"utility",
+            "player_id":"player2",
+            "utility_type":"shield"
+        }
+        """
+        player_id_str = "player1" if player_id == 1 else "player2"
+        packet = {
+            "type": "utility",
+            "player_id": player_id_str,
+            "utility_type": utility_action  
+        }
+        
+        return json.dumps(packet)
+
+    def handle_visualizer_confirmation_packet(self, visualizer_confirmation_packet):
+        """
+        Handle the visualizer confirmation packet.
+
+        Example packet:
+        {
+            "type": "confirmation",
+            "player_id": "player1",
+            "action_type": "grenade",
+            "target_id": "player2",
+            "hit": true
+        }
+        """
+        # Extract the necessary information from the packet
+        player_id_str = visualizer_confirmation_packet['player_id']
+        player_id = 1 if player_id_str == 'player1' else 2
+        action_type = visualizer_confirmation_packet['action_type']
+        hit = visualizer_confirmation_packet['hit']
+
+        # Pass the extracted information to the handle_actions method
+        self.handle_actions(player_id, action_type, hit)                
+
+#########################(Added by your favourite boy Shawn, probably full of bugs. Needs testing)#############################  
 
     def update_game_state(self, game_state_data):
         """
