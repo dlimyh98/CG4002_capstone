@@ -194,7 +194,7 @@ class GameEngine:
             if acting_player.currentGrenades > 0:
                 acting_player.currentGrenades -= 1
 
-        elif action_type == 'shoot':
+        elif action_type == 'gun':
             if acting_player.currentBullets > 0:
                 acting_player.currentBullets -= 1
 
