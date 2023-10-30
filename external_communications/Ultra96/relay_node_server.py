@@ -27,6 +27,16 @@ class RelayNodeServer:
         self.send_task = None
 
         self.connected_clients = set() # store connected client addresses
+
+        self.packet_count = 0
+
+    async def display_frequency(self):
+        while self.is_running:
+            await asyncio.sleep(10)  # sleep for 10 seconds
+            avg_per_second = self.packet_count / 10  # calculate average per second
+            logging.info(f"[RelayNodeServer]: Average packets received per second over the last 10 seconds: {avg_per_second}")
+            print(f"Average packets received per second over the last 10 seconds: {avg_per_second}")
+            self.packet_count = 0  # reset the packet count
     
     async def handle_client(self, reader, writer):
         client_address = writer.get_extra_info('peername')
@@ -57,9 +67,11 @@ class RelayNodeServer:
         try:
             while self.is_running:
                 message = await self.send_queue.get()
-                message_len = str(len(message))
-                encoded_message = bytes(message_len, encoding='utf8') + b'_' + message.encode("utf8")
-                writer.write(encoded_message)
+                message = message.encode()
+                #message_len = str(len(message))
+                #encoded_message = bytes(message_len, encoding='utf8') + b'_' + message.encode("utf8")
+                writer.write(message)
+                logging.info(f"[RelayNodeServer]: MESSAGE: {message}")
                 await writer.drain()
                 await asyncio.sleep(0)
         except Exception as e:
@@ -70,11 +82,14 @@ class RelayNodeServer:
         try:
             while self.is_running:
                 data = await reader.read(20)
-                print(f"data received: {data}")
+                #print(f"data received: {data}")
                 if not data:
                     break
+
+                self.packet_count += 1
+
                 decoded_data = self.decode_message(data)
-                print(decoded_data)
+                #print(decoded_data)
                 await self.receive_queue.put(decoded_data)
                 await asyncio.sleep(0)
         except Exception as e:
@@ -83,31 +98,32 @@ class RelayNodeServer:
     def decode_message(self, data):
         try:
             pkt_id = data[0]
+            # glove beetle 2
             if (pkt_id == BEETLE_ONE_DATA):
                 pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
                 
-                return pkt_data
+                return pkt_data [0:7]
 
+            # vest beetle 1
             elif (pkt_id == BEETLE_TWO_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
-                
-                return pkt_data
+                return pkt_data [0:2]
 
             elif (pkt_id == BEETLE_THREE_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
-                return pkt_data
+                return pkt_data [0:2]
 
             # Gun Beetle 1 No Ack
             elif (pkt_id == BEETLE_FOUR_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
-                return pkt_data
+                return pkt_data [0:3]
            
             # Glove Beetle 1
             elif (pkt_id == BEETLE_FIVE_DATA):
                 pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
-                return pkt_data
+                return pkt_data [0:7]
             
             # Gun Beetle 2 No ack
             elif (pkt_id == BEETLE_SIX_DATA):
@@ -131,6 +147,9 @@ class RelayNodeServer:
             print("Relay Node server starting:")
             logging.info("Relay Node server starting:")
             self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
+
+            frequency_display_task = asyncio.create_task(self.display_frequency())
+
             try: 
                 async with self.server:
                     print(f"Relay Node server listening on {self.host}:{self.port}")
@@ -152,7 +171,7 @@ class RelayNodeServer:
         if self.server:
             self.server.close()
             await self.server.wait_closed()
-            print("Realy Node server stopped.")
+            print("Relay Node server stopped.")
 
 
 def main():

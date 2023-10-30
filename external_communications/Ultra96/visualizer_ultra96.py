@@ -12,7 +12,7 @@ CLIENT_ENDPOINT = "0260bff14c5946a382392749f5535432.s1.eu.hivemq.cloud"
 CLIENT_TLS_PORT = 8883
 
 PUBLISH_TOPIC = "test"
-SUBSCRIBE_TOPIC = "test"
+SUBSCRIBE_TOPIC = "test2"
 
 class VisualizerClient:
     def __init__(self):
@@ -40,6 +40,7 @@ class VisualizerClient:
     def on_message(self, client, userdata, msg):
         topic = msg.topic
         payload = msg.payload.decode("utf8")
+        logging.info(f"[VisualizerClient on_message]: {(topic, payload)}")
         asyncio.run_coroutine_threadsafe(self.async_put(topic, payload), self.loop)
 
     # see which topic was subscribed to
