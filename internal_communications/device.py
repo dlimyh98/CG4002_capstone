@@ -56,6 +56,8 @@ class BeetleDevice:
 
                 elif self.state == States.READ:
                     self.receive_data(0.1, 0.5)
+                    print(f"receive queue size:{self.receive_queue.qsize()} ")
+                    self.send_ext(self.name, self.receive_queue)
         
             except btle.BTLEException as e:
                 print("BTLEException, restarting connection: ", e)
