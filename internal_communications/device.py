@@ -56,8 +56,10 @@ class BeetleDevice:
 
                 elif self.state == States.READ:
                     self.receive_data(0.1, 0.5)
-                    print(f"receive queue size:{self.receive_queue.qsize()} ")
-                    self.send_ext(self.name, self.receive_queue)
+                    print(f"receive queue size:{self.receive_queue.qsize()}")
+                    # if not the glove beetles then check for updates to be sent to hardware
+                    if self.name != "b1" and self.name != "b5":
+                        self.send_ext(self.name, self.receive_queue)
         
             except btle.BTLEException as e:
                 print("BTLEException, restarting connection: ", e)
@@ -228,6 +230,9 @@ class BeetleDevice:
             # print(f"health:{health}")
             # print(f"bullet_count:{bullet_count}")
             # print(f"beetle_device_id: {beetle_device_id}")
+            # remove junk data
+            if data_type != "b" and data_type != "h":
+                receive_queue.get_nowait() 
 
             if data_type == "b" and beetle_device_id == "b4" and player_num == 1:
                 logging.debug("Entered gun update for player 1")
