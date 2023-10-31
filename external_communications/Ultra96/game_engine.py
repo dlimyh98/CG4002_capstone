@@ -69,38 +69,58 @@ class GameEngine:
 
         Update game state according to hit or miss, and send data to Visualizer + Eval Client
         """
+
+        action = "gun"
         while True:
             if not self.gun_input_queue.empty():
                 # this message should be a tuple
                 # can catch exception if not tuple
                 player_id = self.gun_input_queue.get()
+                # temporary workaround
+                if player_id == 4:
+                    player_id = 1
+                print(f"[GameEngine] gun packet: {player_id}")
 
                 try:
                     # wait for a packet from the vest queue
                     # this will time out after 20ms and raise a queue.Empty exception
                     vest_message = self.vest_input_queue.get(block=True, timeout=0.02)
-
+                    print(f"[GameEngine] vest packet: {vest_message}")
                     # deduct target player HP, reduce bullet count
                     self.handle_shot(player_id, True)
 
                     # send packet to visualizer to say hit
                     # construct visualizer packet
+                    gun_visualizer_message = self.construct_visualizer_action_packet(player_id, action)
+                    self.visualizer_client_output_queue.put(gun_visualizer_message)
+
+                    # update hardware
+                    tuples_to_relay_node = self.extract_game_engine_info()
+                    # for tuple in tuples_to_relay_node:
+                    #     logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
+                    #     self.relay_node_server_output_queue.put(str(tuple))
+                    logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
+                    self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                    
+
 
                     # send updated game state + action to eval client
-                    dummy_game_state = None
-                    self.eval_client_output_queue.put(dummy_game_state)
+                    self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
 
 
                 except queue.Empty:
                     # classify as miss
                     self.handle_shot(player_id, False)
-                    # send packet to visualizer to say miss
-                    # construct visualizer packet
+
+                    # update hardware
+                    tuples_to_relay_node = self.extract_game_engine_info()
+                    # for tuple in tuples_to_relay_node:
+                    #     logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
+                    #     self.relay_node_server_output_queue.put(str(tuple))
+                    logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
+                    self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                      
 
                     # send updated game state + action to eval client
-                    dummy_game_state = None
-                    self.eval_client_output_queue.put(dummy_game_state)
-                    return
+                    self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
 
                 # clear both queues?
 
@@ -157,12 +177,18 @@ class GameEngine:
             if not self.eval_client_input_queue.empty():
                 game_state = self.eval_client_input_queue.get()
 
+                game_state_dict = json.loads(game_state)
+
                 # update game state
-                self.update_game_state(game_state)
+                self.update_game_state(game_state_dict)
                 # send back player HP and bullet count back to Relay Node server
                 # break down tuple here
-                dummy_tuple = (1, 2)
-                self.relay_node_server_output_queue.put(dummy_tuple)
+                tuples_to_relay_node = self.extract_eval_client_game_state_info(game_state_dict)
+                # for tuple in tuples_to_relay_node:
+                #     logging.info(f"[GameEngine] game_state_thread UPDATE: tuple sent: {tuple}")
+                #     self.relay_node_server_output_queue.put(str(tuple))
+                logging.info(f"[GameEngine] gun_state_thread UPDATE: tuple sent: {tuple}")
+                self.relay_node_server_output_queue.put(str(tuples_to_relay_node))  
 
     
     # insert all utility functions here
@@ -391,6 +417,36 @@ class GameEngine:
             }
         return json.dumps(transformed_data)
 
+    def extract_game_engine_info(self):
+        p1_bullets_tuple = ('b', 1, self.player1.currentBullets)
+        p1_hp_tuple = ('h', 1, self.player1.currentHealth)
+        p2_bullets_tuple = ('b', 2, self.player2.currentBullets)
+        p2_hp_tuple = ('h', 2, self.player2.currentHealth)
+        logging.info(f"[GameEngine] extract_game_engine_info: {p1_bullets_tuple}, {p1_hp_tuple}, {p2_bullets_tuple}, {p2_hp_tuple}")
+        return p1_bullets_tuple
+        # return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple      
+
+    def extract_eval_client_game_state_info(self, eval_client_data):
+        """
+        Extract p1 and p2's bullet counts and HP.
+
+        Return four tuples to be sent back to the relay node server.
+        """
+        p1_bullets = eval_client_data['p1']['bullets']
+        p1_hp = eval_client_data['p1']['hp']
+        p2_bullets = eval_client_data['p2']['bullets']
+        p2_hp = eval_client_data['p2']['hp']
+
+        p1_bullets_tuple = ('b', 1, p1_bullets)
+        p1_hp_tuple = ('h', 1, p1_hp)
+
+        p2_bullets_tuple = ('b', 2, p2_bullets)
+        p2_hp_tuple = ('h', 2, p2_hp)
+        logging.info(f"[GameEngine] extract_eval_client_game_state_info: {p1_bullets_tuple}, {p1_hp_tuple}, {p2_bullets_tuple}, {p2_hp_tuple}")
+        return p1_bullets_tuple # in the top function, just remove the for loop
+        # return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple
+        
+
     def update_game_state(self, game_state_data):
         """
         Update game state.
@@ -413,9 +469,13 @@ class GameEngine:
         try:
             # Create threads
             action_processing = threading.Thread(target=self.action_processing_thread)
+            gun_vest_processing = threading.Thread(target=self.gun_vest_processing_thread)
+            game_state_processing = threading.Thread(target=self.game_state_processing_thread)
 
             # Start threads
             action_processing.start()
+            gun_vest_processing.start()
+            game_state_processing.start()
 
             logging.info("Game Engine started.")
             print("Game Engine started.")

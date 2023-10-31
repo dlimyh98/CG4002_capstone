@@ -59,8 +59,8 @@ class Ultra96:
                 asyncio.create_task(self.redirect_EvalClient_to_GameEngine()),
 
                 asyncio.create_task(self.redirect_GameEngine_to_Visualizer()),
-                asyncio.create_task(self.redirect_Visualizer_to_GameEngine())
-                # asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
+                asyncio.create_task(self.redirect_Visualizer_to_GameEngine()),
+                asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
             )
         except KeyboardInterrupt:
             pass
@@ -90,10 +90,14 @@ class Ultra96:
                 if data[0] == BEETLE_ONE_DATA or data[0] == BEETLE_FIVE_DATA:
                     await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data[1:7])
                     logging.info(f"[RelayNode->AI/GameEngine]: Data to AI: {data[1:7]}")
-                # gun or vest
-                elif data[0] == BEETLE_TWO_DATA or data[0] == BEETLE_THREE_DATA or data[0] == BEETLE_FOUR_DATA:
-                    await self.loop.run_in_executor(None, self.game_engine.gun_input_queue.put, data)
-                    logging.info(f"[RelayNode->AI/GameEngine]: Data to Game Engine: {data}")
+                # gun
+                elif data[0] == BEETLE_FOUR_DATA:
+                    await self.loop.run_in_executor(None, self.game_engine.gun_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: Gun data to Game Engine: {data}")
+                # vest
+                elif data[0] == BEETLE_THREE_DATA:
+                    await self.loop.run_in_executor(None, self.game_engine.vest_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: Vest data to Game Engine: {data}")
 
                 logging.info("[RelayNode->AI/GameEngine]: Exit pipeline")
                 
@@ -232,7 +236,6 @@ class Ultra96:
         except Exception as e:
             print(f"[Visualizer->GameEngine]: Error: {e}")
 
-    # this pipeline should be inactive
     async def redirect_GameEngine_to_RelayNodeServer(self):
         if not self.is_running:
             return
@@ -240,16 +243,10 @@ class Ultra96:
         try:
             while self.is_running:
                 logging.info("[GameEngine->RelayNodeServer]: Enter pipeline.")
-                data = await self.loop.run_in_executor(None, self.game_engine.data_output_queue.get)
+                data = await self.loop.run_in_executor(None, self.game_engine.relay_node_server_output_queue.get)
 
-                # reconstruct packet for relay node server here
-                p1_hp = data["player1"]["currentHealth"]
-                p1_bullets = data["player1"]["currentBullets"]
-
-                p1_data = (p1_hp, p1_bullets)
-
-                await self.relay_node_server.send_queue.put(p1_data)
-                logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: {p1_data}")
+                await self.relay_node_server.send_queue.put(data)
+                logging.info(f"[GameEngine->RelayNodeServer]: Data to RelayNodeServer: {data}")
                 logging.info("[GameEngine->RelayNodeServer]: Exit pipeline.")
         except asyncio.CancelledError:
             return
