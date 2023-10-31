@@ -222,6 +222,9 @@ class BeetleDevice:
             
             # check what data it is
             current_data = receive_queue.queue[0]
+
+            if len(current_data) != 3:
+                receive_queue.get()
             
             logging.debug(f"Send Ext:{current_data}")
             data_type, player_num, data_content = current_data[0], current_data[1], current_data[2]
@@ -231,8 +234,10 @@ class BeetleDevice:
             # print(f"bullet_count:{bullet_count}")
             # print(f"beetle_device_id: {beetle_device_id}")
             # remove junk data
+            print(data_type)
             if data_type != "b" and data_type != "h":
-                receive_queue.get_nowait() 
+                print("entered removing junk")
+                receive_queue.get() 
 
             if data_type == "b" and beetle_device_id == "b4" and player_num == 1:
                 logging.debug("Entered gun update for player 1")
