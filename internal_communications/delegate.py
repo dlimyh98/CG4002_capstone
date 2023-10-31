@@ -46,6 +46,7 @@ class MyDelegate(btle.DefaultDelegate):
         
         if self.beetle.completed_handshake:
             if time.time() - self.last_received_time > self.receive_interval:
+                print(f"receive queue size:{self.receive_queue.qsize()} ")
                 self.beetle.send_ext(self.beetle.name, self.receive_queue)
                 self.last_received_time = time.time()
 
@@ -60,7 +61,7 @@ class MyDelegate(btle.DefaultDelegate):
                 
                     self.seq_no = pkt_data[-3]
                     self.beetle.total_bytes_received += 9 #Only data bytes
-                    print(f"[purple] Beetle One Packet received successfully: {pkt_data}[/purple]")
+                    logging.info(f"[purple] Beetle One Packet received successfully: {pkt_data}[/purple]")
                     self.send_queue.put(data)
                     self.beetle.data_collector.store_data(pkt_data[1:7])
 
@@ -71,8 +72,8 @@ class MyDelegate(btle.DefaultDelegate):
                 
                     self.seq_no = pkt_data[-3]
 
-                    if self.beetle.completed_handshake:
-                        self.beetle.send_ack(self.seq_no)
+                    # if self.beetle.completed_handshake:
+                    #     self.beetle.send_ack(self.seq_no)
 
                     print(f"[red] Beetle Two Packet received successfully: {pkt_data}[/red]")
                     self.send_queue.put(data)
@@ -84,8 +85,8 @@ class MyDelegate(btle.DefaultDelegate):
                 
                     self.seq_no = pkt_data[-3]
 
-                    if self.beetle.completed_handshake:
-                        self.beetle.send_ack(self.seq_no)
+                    # if self.beetle.completed_handshake:
+                    #     self.beetle.send_ack(self.seq_no)
                     
                     print(f"[blue] Beetle Three Packet received successfully: {pkt_data}[/blue]")
                     self.send_queue.put(data)
