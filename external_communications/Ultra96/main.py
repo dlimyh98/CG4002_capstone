@@ -90,14 +90,26 @@ class Ultra96:
                 if data[0] == BEETLE_ONE_DATA or data[0] == BEETLE_FIVE_DATA:
                     await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data[1:7])
                     logging.info(f"[RelayNode->AI/GameEngine]: Data to AI: {data[1:7]}")
-                # gun
+
+                # player 1 gun
                 elif data[0] == BEETLE_FOUR_DATA:
-                    await self.loop.run_in_executor(None, self.game_engine.gun_input_queue.put, data[0])
-                    logging.info(f"[RelayNode->AI/GameEngine]: Gun data to Game Engine: {data}")
-                # vest
+                    await self.loop.run_in_executor(None, self.game_engine.p1_gun_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P1 Gun data to Game Engine: {data}")
+
+                # player 2 gun
+                elif data[0] == BEETLE_SIX_DATA:
+                    await self.loop.run_in_executor(None, self.game_engine.p2_gun_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P2 Gun data to Game Engine: {data}")
+
+                # player 1 vest
                 elif data[0] == BEETLE_THREE_DATA:
-                    await self.loop.run_in_executor(None, self.game_engine.vest_input_queue.put, data[0])
-                    logging.info(f"[RelayNode->AI/GameEngine]: Vest data to Game Engine: {data}")
+                    await self.loop.run_in_executor(None, self.game_engine.p1_vest_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P1 Vest data to Game Engine: {data}")
+                
+                # player 2 vest
+                elif data[0] == BEETLE_TWO_DATA:
+                    await self.loop.run_in_executor(None, self.game_engine.p2_vest_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P2 Vest data to Game Engine: {data}")
 
                 logging.info("[RelayNode->AI/GameEngine]: Exit pipeline")
                 

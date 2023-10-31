@@ -7,8 +7,10 @@ import json
 
 # constants for received messages
 # this should expand to player 1 and 2 later
-VEST = 4
-GUN = 5
+PLAYER_1_GUN = 5
+PLAYER_1_VEST = 4
+PLAYER_2_GUN = 7
+PLAYER_2_VEST = 3
 
 possible_actions = ["gun", "shield", "reload", "web", "grenade",
                     "portal", "punch", "hammer", "spear", "logout"]
@@ -45,9 +47,11 @@ class Player:
 class GameEngine:
     def __init__(self):
         # input queues
-        self.gun_input_queue = queue.Queue() # data from gun
-        self.vest_input_queue = queue.Queue() # data from vest
-        self.action_input_queue = queue.Queue() # data from AI
+        self.p1_gun_input_queue = queue.Queue() 
+        self.p2_gun_input_queue = queue.Queue() 
+        self.p1_vest_input_queue = queue.Queue()
+        self.p2_vest_input_queue = queue.Queue() 
+        self.action_input_queue = queue.Queue() 
         self.visualizer_client_input_queue = queue.Queue() # data from visualizer (confirmation)
         self.eval_client_input_queue = queue.Queue() # data from eval client
 
@@ -72,59 +76,68 @@ class GameEngine:
 
         action = "gun"
         while True:
-            if not self.gun_input_queue.empty():
-                # this message should be a tuple
-                # can catch exception if not tuple
-                player_id = self.gun_input_queue.get()
-                # temporary workaround
-                if player_id == 4:
+            # check for shots from player 1's gun
+            if not self.p1_gun_input_queue.empty():
+                player_id = self.p1_gun_input_queue.get()
+                if player_id == PLAYER_1_GUN:
+                    logging.info(f"[GameEngine] p1 gun packet: {player_id}")
                     player_id = 1
-                print(f"[GameEngine] gun packet: {player_id}")
+                    self.check_vest_received(player_id, self.p2_vest_input_queue, action)
 
-                try:
-                    # wait for a packet from the vest queue
-                    # this will time out after 20ms and raise a queue.Empty exception
-                    vest_message = self.vest_input_queue.get(block=True, timeout=0.02)
-                    print(f"[GameEngine] vest packet: {vest_message}")
-                    # deduct target player HP, reduce bullet count
-                    self.handle_shot(player_id, True)
+            # check for shots from player 2's gun
+            if not self.p2_gun_input_queue.empty():
+                player_id = self.p2_gun_input_queue.get()
+                if player_id == PLAYER_2_GUN:
+                    logging.info(f"[GameEngine] p2 gun packet: {player_id}")
+                    player_id = 2
+                    self.check_vest_received(player_id, self.p1_vest_input_queue, action)
 
-                    # send packet to visualizer to say hit
-                    # construct visualizer packet
-                    gun_visualizer_message = self.construct_visualizer_action_packet(player_id, action)
-                    self.visualizer_client_output_queue.put(gun_visualizer_message)
-
-                    # update hardware
-                    tuples_to_relay_node = self.extract_game_engine_info()
-                    # for tuple in tuples_to_relay_node:
-                    #     logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
-                    #     self.relay_node_server_output_queue.put(str(tuple))
-                    logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
-                    self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                    
+            # include some error handling here 
 
 
-                    # send updated game state + action to eval client
-                    self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
+    def check_vest_received(self, player_id, target_vest_queue, action):
+        """
+        Given the player who shot the gun, check the target vest queue for a hit or miss and process accordingly.
 
+        If no packet is dequeued from the respective vest queue within the timeout, it will be treated as a miss.
+        """
+        try:
+            vest_message = target_vest_queue.get(block=True, timeout=0.02)
+            print(f"[GameEngine] vest packet: {vest_message}")
+            self.handle_shot(player_id, True)
 
-                except queue.Empty:
-                    # classify as miss
-                    self.handle_shot(player_id, False)
+            # send packet to visualizer to say hit
+            gun_visualizer_message = self.construct_visualizer_action_packet(player_id, action)
+            self.visualizer_client_output_queue.put(gun_visualizer_message)
 
-                    # update hardware
-                    tuples_to_relay_node = self.extract_game_engine_info()
-                    # for tuple in tuples_to_relay_node:
-                    #     logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
-                    #     self.relay_node_server_output_queue.put(str(tuple))
-                    logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
-                    self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                      
+            # update hardware
+            tuples_to_relay_node = self.extract_game_engine_info()
+            # uncomment below when ready to test with all guns/vests
+            # for tuple in tuples_to_relay_node:
+            #     logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
+            #     self.relay_node_server_output_queue.put(str(tuple))
+            logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuples_to_relay_node}")
+            self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                    
 
-                    # send updated game state + action to eval client
-                    self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
+            # send updated game state + action to eval client
+            self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
 
-                # clear both queues?
+        except queue.Empty:
+            # classify as miss
+            self.handle_shot(player_id, False)
 
-    
+            # update hardware
+            tuples_to_relay_node = self.extract_game_engine_info()
+            # uncomment below when ready to test with all guns/vests
+            # for tuple in tuples_to_relay_node:
+            #     logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
+            #     self.relay_node_server_output_queue.put(str(tuple))
+            logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuples_to_relay_node}")
+            self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                      
+
+            # send updated game state + action to eval client
+            self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
+
     # Thread 2: for incoming action from AI
     def action_processing_thread(self):
         """
