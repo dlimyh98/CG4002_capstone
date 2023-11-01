@@ -1,0 +1,68 @@
+import pandas as pd
+from ai_MLPClassifier import MLPClassifier66
+import time
+import asyncio
+import queue
+import threading
+
+import pandas as pd
+from ai_MLPClassifier import MLPClassifier66
+import time
+import asyncio
+import queue
+import threading
+import logging
+
+class MainApp(threading.Thread):
+
+    def __init__(self, loop):
+        super().__init__()
+        self.p1_mlp = MLPClassifier66()
+        self.p2_mlp = MLPClassifier66()
+
+        self.p1_input_queue = queue.Queue()
+        self.p2_input_queue = queue.Queue()
+        self.p1_output_queue = queue.Queue()
+        self.p2_output_queue = queue.Queue()
+
+        self.loop = loop    
+        self.loop_ready = threading.Event()
+
+    def handle_data(self, input_queue, mlp, output_queue):
+        while True:
+            try:
+                data = input_queue.get()
+                action = mlp.handle_sample(data)
+                if action is not None:
+                    output_queue.put(action)
+                    logging.info(f"[AI main]: action: {action} to queue {output_queue}")
+                # self.mlp.record_sample(data)                
+            except Exception as e:
+                print(f"MainApp error: {e}")
+
+    def run(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop_ready.set()
+        self.loop.run_until_complete(self.async_start())
+        self.loop.run_forever()
+
+    def start(self):
+        # instantiate one thread for each glove
+        p1_glove_thread = threading.Thread(target=self.handle_data, args=(self.p1_input_queue, self.p1_mlp, self.p1_output_queue))
+        p2_glove_thread = threading.Thread(target=self.handle_data, args=(self.p2_input_queue, self.p2_mlp, self.p2_output_queue))
+
+        # start both threads
+        p1_glove_thread.start()
+        p2_glove_thread.start()
+
+    async def async_start(self):
+        self.loop = asyncio.get_event_loop()
+        await self.loop.run_in_executor(None, self.start)
+        print("AI started.")
+
+
+if __name__ == '__main__':
+    # app = MainApp('../data/spear_raw.csv')
+    app = MainApp()
+    app.run()
+
