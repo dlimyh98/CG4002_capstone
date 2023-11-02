@@ -41,6 +41,8 @@ class Ultra96:
         self.ai_predictor = MainApp(self.loop)
         self.is_running = True
 
+        self.packet_count = 0
+
     async def run(self):
         try:
             print("Ultra96 starting...")
@@ -55,12 +57,14 @@ class Ultra96:
                 asyncio.create_task(self.redirect_RelayNode_to_AI_or_GameEngine()),
                 asyncio.create_task(self.redirect_AI_to_GameEngine()),
 
-                asyncio.create_task(self.redirect_GameEngine_to_EvalClient()), # problem pipe
+                asyncio.create_task(self.redirect_GameEngine_to_EvalClient()), 
                 asyncio.create_task(self.redirect_EvalClient_to_GameEngine()),
 
                 asyncio.create_task(self.redirect_GameEngine_to_Visualizer()),
                 asyncio.create_task(self.redirect_Visualizer_to_GameEngine()),
-                asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
+                asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer()),
+
+                asyncio.create_task(self.display_frequency()) # this should be removed after testing
             )
         except KeyboardInterrupt:
             pass
@@ -69,6 +73,14 @@ class Ultra96:
             print(f"Ultra96 error: {e}")
         finally:
             await self.stop()
+
+    async def display_frequency(self):
+        while self.is_running:
+            await asyncio.sleep(10)  # sleep for 10 seconds
+            avg_per_second = self.packet_count / 10  # calculate average per second
+            logging.info(f"[RelayNode->AI/GameEngine]: Average packets received per second over the last 10 seconds: {avg_per_second}")
+            print(f"[RelayNode->AI/GameEngine]: Average packets received per second over the last 10 seconds: {avg_per_second}")
+            self.packet_count = 0  # reset the packet count
 
     async def redirect_RelayNode_to_AI_or_GameEngine(self):
         """
@@ -86,18 +98,32 @@ class Ultra96:
 
                 logging.info(f"[RelayNode->AI/GameEngine]: Data from relay node server: {data}")
 
+                self.packet_count += 1
+
                 # glove
                 if data[0] == BEETLE_ONE_DATA or data[0] == BEETLE_FIVE_DATA:
                     await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data[1:7])
                     logging.info(f"[RelayNode->AI/GameEngine]: Data to AI: {data[1:7]}")
-                # gun
+
+                # player 1 gun
                 elif data[0] == BEETLE_FOUR_DATA:
-                    await self.loop.run_in_executor(None, self.game_engine.gun_input_queue.put, data[0])
-                    logging.info(f"[RelayNode->AI/GameEngine]: Gun data to Game Engine: {data}")
-                # vest
+                    await self.loop.run_in_executor(None, self.game_engine.p1_gun_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P1 Gun data to Game Engine: {data}")
+
+                # player 2 gun
+                elif data[0] == BEETLE_SIX_DATA:
+                    await self.loop.run_in_executor(None, self.game_engine.p2_gun_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P2 Gun data to Game Engine: {data}")
+
+                # player 1 vest
                 elif data[0] == BEETLE_THREE_DATA:
-                    await self.loop.run_in_executor(None, self.game_engine.vest_input_queue.put, data[0])
-                    logging.info(f"[RelayNode->AI/GameEngine]: Vest data to Game Engine: {data}")
+                    await self.loop.run_in_executor(None, self.game_engine.p1_vest_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P1 Vest data to Game Engine: {data}")
+                
+                # player 2 vest
+                elif data[0] == BEETLE_TWO_DATA:
+                    await self.loop.run_in_executor(None, self.game_engine.p2_vest_input_queue.put, data[0])
+                    logging.info(f"[RelayNode->AI/GameEngine]: P2 Vest data to Game Engine: {data}")
 
                 logging.info("[RelayNode->AI/GameEngine]: Exit pipeline")
                 

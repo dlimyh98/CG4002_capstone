@@ -7,11 +7,11 @@ HOST = '0.0.0.0' # listen on all network interfaces
 PORT = 8080
 
 BEETLE_ONE_DATA=2
-BEETLE_TWO_DATA=3
-BEETLE_THREE_DATA=4
-BEETLE_FOUR_DATA=5 # Gun Beetle 1
-BEETLE_FIVE_DATA=6
-BEETLE_SIX_DATA=7 # Gun Beetle 2
+BEETLE_TWO_DATA=3 # Player 2 vest
+BEETLE_THREE_DATA=4 # Player 1 vest
+BEETLE_FOUR_DATA=5 # Player 1 gun
+BEETLE_FIVE_DATA=6 
+BEETLE_SIX_DATA=7 # Player 2 gun
 
 class RelayNodeServer:
     def __init__(self, host, port):
@@ -144,23 +144,23 @@ class RelayNodeServer:
         # wait for a connection
         # three params: callback, host, port
         # callback funtion: called whenever a new client connection is established
-            print("Relay Node server starting:")
-            logging.info("Relay Node server starting:")
-            self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
+        print("Relay Node server starting:")
+        logging.info("Relay Node server starting:")
+        self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
 
-            frequency_display_task = asyncio.create_task(self.display_frequency())
+        frequency_display_task = asyncio.create_task(self.display_frequency())
 
-            try: 
-                async with self.server:
-                    print(f"Relay Node server listening on {self.host}:{self.port}")
-                    logging.info(f"Relay Node server listening on {self.host}:{self.port}")
-                    await self.server.serve_forever()
-            except asyncio.CancelledError:
-                print("Relay Node server cancelled")
-                return
-            except Exception as e:
-                print(f"Relay Node server error: {e}")
-                logging.error(f"Relay Node server error: {e}")
+        try: 
+            async with self.server:
+                print(f"Relay Node server listening on {self.host}:{self.port}")
+                logging.info(f"Relay Node server listening on {self.host}:{self.port}")
+                await self.server.serve_forever()
+        except asyncio.CancelledError:
+            print("Relay Node server cancelled")
+            return
+        except Exception as e:
+            print(f"Relay Node server error: {e}")
+            logging.error(f"Relay Node server error: {e}")
 
     async def stop(self):
         if not self.is_running:

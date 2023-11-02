@@ -7,8 +7,10 @@ import json
 
 # constants for received messages
 # this should expand to player 1 and 2 later
-VEST = 4
-GUN = 5
+PLAYER_1_GUN = 5
+PLAYER_1_VEST = 4
+PLAYER_2_GUN = 7
+PLAYER_2_VEST = 3
 
 possible_actions = ["gun", "shield", "reload", "web", "grenade",
                     "portal", "punch", "hammer", "spear", "logout"]
@@ -45,9 +47,12 @@ class Player:
 class GameEngine:
     def __init__(self):
         # input queues
-        self.gun_input_queue = queue.Queue() # data from gun
-        self.vest_input_queue = queue.Queue() # data from vest
-        self.action_input_queue = queue.Queue() # data from AI
+        self.p1_gun_input_queue = queue.Queue() 
+        self.p2_gun_input_queue = queue.Queue() 
+        self.p1_vest_input_queue = queue.Queue()
+        self.p2_vest_input_queue = queue.Queue() 
+        self.p1_action_input_queue = queue.Queue(0)
+        self.p2_action_input_queue = queue.Queue() 
         self.visualizer_client_input_queue = queue.Queue() # data from visualizer (confirmation)
         self.eval_client_input_queue = queue.Queue() # data from eval client
 
@@ -72,59 +77,64 @@ class GameEngine:
 
         action = "gun"
         while True:
-            if not self.gun_input_queue.empty():
-                # this message should be a tuple
-                # can catch exception if not tuple
-                player_id = self.gun_input_queue.get()
-                # temporary workaround
-                if player_id == 4:
-                    player_id = 1
-                print(f"[GameEngine] gun packet: {player_id}")
+            # check for shots from player 1's gun
+            if not self.p1_gun_input_queue.empty():
+                gun_beetle_id = self.p1_gun_input_queue.get()
+                if gun_beetle_id == PLAYER_1_GUN:
+                    player_id = 1                    
+                    logging.info(f"[GameEngine] p1 gun packet: {player_id}")
+                    self.check_vest_received(player_id, self.p2_vest_input_queue, action)
 
-                try:
-                    # wait for a packet from the vest queue
-                    # this will time out after 20ms and raise a queue.Empty exception
-                    vest_message = self.vest_input_queue.get(block=True, timeout=0.02)
-                    print(f"[GameEngine] vest packet: {vest_message}")
-                    # deduct target player HP, reduce bullet count
-                    self.handle_shot(player_id, True)
+            # check for shots from player 2's gun
+            if not self.p2_gun_input_queue.empty():
+                gun_beetle_id = self.p2_gun_input_queue.get()
+                if gun_beetle_id == PLAYER_2_GUN:
+                    player_id = 2
+                    logging.info(f"[GameEngine] p2 gun packet: {player_id}")
+                    self.check_vest_received(player_id, self.p1_vest_input_queue, action)
 
-                    # send packet to visualizer to say hit
-                    # construct visualizer packet
-                    gun_visualizer_message = self.construct_visualizer_action_packet(player_id, action)
-                    self.visualizer_client_output_queue.put(gun_visualizer_message)
-
-                    # update hardware
-                    tuples_to_relay_node = self.extract_game_engine_info()
-                    # for tuple in tuples_to_relay_node:
-                    #     logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
-                    #     self.relay_node_server_output_queue.put(str(tuple))
-                    logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")
-                    self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                    
+            # include some error handling here 
 
 
-                    # send updated game state + action to eval client
-                    self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
+    def check_vest_received(self, player_id, target_vest_queue, action):
+        """
+        Given the player who shot the gun, check the target vest queue for a hit or miss and process accordingly.
 
+        If no packet is dequeued from the respective vest queue within the timeout, it will be treated as a miss.
+        """
+        try:
+            vest_message = target_vest_queue.get(block=True, timeout=1)
+            logging.info(f"[GameEngine] vest packet: {vest_message}")
+            self.handle_shot(player_id, True)
 
-                except queue.Empty:
-                    # classify as miss
-                    self.handle_shot(player_id, False)
+            # send packet to visualizer to say hit
+            gun_visualizer_message = self.construct_visualizer_action_packet(player_id, action)
+            self.visualizer_client_output_queue.put(gun_visualizer_message)
 
-                    # update hardware
-                    tuples_to_relay_node = self.extract_game_engine_info()
-                    # for tuple in tuples_to_relay_node:
-                    #     logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
-                    #     self.relay_node_server_output_queue.put(str(tuple))
-                    logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")
-                    self.relay_node_server_output_queue.put(str(tuples_to_relay_node))                      
+            # update hardware
+            tuples_to_relay_node = self.extract_game_engine_info()
+            # uncomment below when ready to test with all guns/vests
+            for tuple in tuples_to_relay_node:
+                self.relay_node_server_output_queue.put(str(tuple) + '|')
+                logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")                   
 
-                    # send updated game state + action to eval client
-                    self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
+            # send updated game state + action to eval client
+            self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
 
-                # clear both queues?
+        except queue.Empty:
+            # classify as miss
+            self.handle_shot(player_id, False)
 
-    
+            # update hardware
+            tuples_to_relay_node = self.extract_game_engine_info()
+            # uncomment below when ready to test with all guns/vests
+            for tuple in tuples_to_relay_node:
+                self.relay_node_server_output_queue.put(str(tuple) + '|')
+                logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")                     
+
+            # send updated game state + action to eval client
+            self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
+
     # Thread 2: for incoming action from AI
     def action_processing_thread(self):
         """
@@ -132,38 +142,41 @@ class GameEngine:
         directly update the game state and send to Eval Client.
         """
         while True:
-            if not self.action_input_queue.empty():
-                # for 2 player game, this action should contain both player id and action
-                # i.e. (1, shield) or (2, reload)
-                action = self.action_input_queue.get()
-                
-                # obtain player id and action
+            if not self.p1_action_input_queue.empty():
+                p1_action = self.p1_action_input_queue.get()
                 player_id = 1
-                # action = "shield"
+                logging.info(f"[GameEngine] p1 action: {p1_action}")
+                self.check_action_received(player_id, p1_action)
+            
+            if not self.p2_action_input_queue.empty():
+                p2_action = self.p2_action_input_queue.get()
+                player_id = 2
+                logging.info(f"[GameEngine] p2 action: {p2_action}")
+                self.check_action_received(player_id, p1_action)
 
-                if action in possible_actions:
+    def check_action_received(self, player_id, action):
+        while True:
+            if action in possible_actions:
+                if action in utility_actions:
+                # if utility, update game state, send to visualizer
+                    self.handle_utility(player_id, action)
 
-                    if action in utility_actions:
-                    # if utility, update game state, send to visualizer
-                        self.handle_utility(player_id, action)
+                # else, send a packet to visualizer and wait for confirmation
+                elif action in special_actions:
+                    # construct visualizer packet and send to visualizer
+                    dummy_visualizer_packet = self.construct_visualizer_action_packet(player_id, action)
+                    self.visualizer_client_output_queue.put(dummy_visualizer_packet)
 
-                    # else, send a packet to visualizer and wait for confirmation
-                    elif action in special_actions:
+                    # wait for visualizer_client_input_queue with timeout
+                    try:
+                        confirmation_packet = self.visualizer_client_input_queue.get(block=True, timeout=1)
+                        self.handle_visualizer_confirmation_packet(confirmation_packet)
+                    except queue.Empty:
+                        logging.info("[GameEngine] action_processing_thread: TIMEOUT")
 
-                        # construct visualizer packet and send to visualizer
-                        dummy_visualizer_packet = self.construct_visualizer_action_packet(player_id, action)
-                        self.visualizer_client_output_queue.put(dummy_visualizer_packet)
-
-                        # wait for visualizer_client_input_queue with timeout
-                        try:
-                            confirmation_packet = self.visualizer_client_input_queue.get(block=True, timeout=0.02)
-                            self.handle_visualizer_confirmation_packet(confirmation_packet)
-                        except queue.Empty:
-                            logging.info("[GameEngine] action_processing_thread: TIMEOUT")
-
-                # send game state + action to eval client and visualizer
-                self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
-                self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(action))
+            # send game state + action to eval client and visualizer
+            self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
+            self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
         
         
     # Thread 3: waiting for a message from eval client
@@ -174,22 +187,18 @@ class GameEngine:
         Update the game state and extract relevant information to send to Relay Node Server.
         """
         while True:
-            if not self.eval_client_input_queue.empty():
-                game_state = self.eval_client_input_queue.get()
+            game_state = self.eval_client_input_queue.get()
 
-                game_state_dict = json.loads(game_state)
+            game_state_dict = json.loads(game_state)
 
-                # update game state
-                self.update_game_state(game_state_dict)
-                # send back player HP and bullet count back to Relay Node server
-                # break down tuple here
-                tuples_to_relay_node = self.extract_eval_client_game_state_info(game_state_dict)
-                # for tuple in tuples_to_relay_node:
-                #     logging.info(f"[GameEngine] game_state_thread UPDATE: tuple sent: {tuple}")
-                #     self.relay_node_server_output_queue.put(str(tuple))
-                logging.info(f"[GameEngine] gun_state_thread UPDATE: tuple sent: {tuple}")
-                self.relay_node_server_output_queue.put(str(tuples_to_relay_node))  
-
+            # update game state
+            self.update_game_state(game_state_dict)
+            # send back player HP and bullet count back to Relay Node server
+            # break down tuple here
+            tuples_to_relay_node = self.extract_eval_client_game_state_info(game_state_dict)
+            for tuple in tuples_to_relay_node:
+                self.relay_node_server_output_queue.put(str(tuple) + '|')
+                logging.info(f"[GameEngine] game_state_thread UPDATE: tuple sent: {tuple}")
     
     # insert all utility functions here
     # should we follow GameState.py's implementation, or week 9 game engine?
@@ -266,8 +275,6 @@ class GameEngine:
             if target_player.currentHealth <= 0:
                 target_player.deaths += 1
                 target_player.respawn()
-
-#########################(Added by your favourite boy Shawn, probably full of bugs. Needs testing)#############################
 
     # Construct visualizer game_state packet and returns it as a string
     def construct_visualizer_game_state_packet(self):
@@ -394,9 +401,7 @@ class GameEngine:
         # Pass the extracted information to the handle_actions method
         self.handle_actions(player_id, action_type, hit)                
 
-#########################(Added by your favourite boy Shawn, probably full of bugs. Needs testing)#############################  
-
-    def convert_game_engine_state_to_eval_client(self, action):
+    def convert_game_engine_state_to_eval_client(self, player_id, action):
         def player_transform(player_data):
             return {
                 "hp": player_data.currentHealth,
@@ -408,7 +413,7 @@ class GameEngine:
             }  
 
         transformed_data = {
-                "player_id": 1,
+                "player_id": player_id,
                 "action": action,
                 "game_state": {
                     "p1": player_transform(self.player1),
@@ -423,8 +428,7 @@ class GameEngine:
         p2_bullets_tuple = ('b', 2, self.player2.currentBullets)
         p2_hp_tuple = ('h', 2, self.player2.currentHealth)
         logging.info(f"[GameEngine] extract_game_engine_info: {p1_bullets_tuple}, {p1_hp_tuple}, {p2_bullets_tuple}, {p2_hp_tuple}")
-        return p1_bullets_tuple
-        # return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple      
+        return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple      
 
     def extract_eval_client_game_state_info(self, eval_client_data):
         """
@@ -443,8 +447,7 @@ class GameEngine:
         p2_bullets_tuple = ('b', 2, p2_bullets)
         p2_hp_tuple = ('h', 2, p2_hp)
         logging.info(f"[GameEngine] extract_eval_client_game_state_info: {p1_bullets_tuple}, {p1_hp_tuple}, {p2_bullets_tuple}, {p2_hp_tuple}")
-        return p1_bullets_tuple # in the top function, just remove the for loop
-        # return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple
+        return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple
         
 
     def update_game_state(self, game_state_data):
@@ -453,14 +456,24 @@ class GameEngine:
 
         This method assumes game_state_data follows the Eval Server packet format.
         """
+        ATTRIBUTE_MAP = {
+            "hp": "currentHealth",
+            "bullets": "currentBullets",
+            "grenades": "currentGrenades",
+            "shield_hp": "currentShield",
+            "deaths": "deaths",
+            "shields": "currentShields"
+        }
         player1_data = game_state_data['p1']
         player2_data = game_state_data['p2']
 
         for attr, value in player1_data.items():
-            setattr(self.player1, attr, value)
+            if attr in ATTRIBUTE_MAP:
+                setattr(self.player1, ATTRIBUTE_MAP[attr], value)
 
         for attr, value in player2_data.items():
-            setattr(self.player2, attr, value) 
+            if attr in ATTRIBUTE_MAP:
+                setattr(self.player2, ATTRIBUTE_MAP[attr], value)
 
         logging.info("[GameEngine]: Game state updated.")
                 
