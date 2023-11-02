@@ -456,14 +456,24 @@ class GameEngine:
 
         This method assumes game_state_data follows the Eval Server packet format.
         """
+        ATTRIBUTE_MAP = {
+            "hp": "currentHealth",
+            "bullets": "currentBullets",
+            "grenades": "currentGrenades",
+            "shield_hp": "currentShield",
+            "deaths": "deaths",
+            "shields": "currentShields"
+        }
         player1_data = game_state_data['p1']
         player2_data = game_state_data['p2']
 
         for attr, value in player1_data.items():
-            setattr(self.player1, attr, value)
+            if attr in ATTRIBUTE_MAP:
+                setattr(self.player1, ATTRIBUTE_MAP[attr], value)
 
         for attr, value in player2_data.items():
-            setattr(self.player2, attr, value) 
+            if attr in ATTRIBUTE_MAP:
+                setattr(self.player2, ATTRIBUTE_MAP[attr], value)
 
         logging.info("[GameEngine]: Game state updated.")
                 
