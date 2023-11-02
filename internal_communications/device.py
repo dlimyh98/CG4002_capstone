@@ -216,8 +216,11 @@ class BeetleDevice:
         try:
             print("Entered send Ext")
 
+            # if not receive_queue.empty():
+            #     logging.info(f"Received: {receive_queue.get()}")
+
             if receive_queue.empty():
-                print(receive_queue.qsize())
+                print(f"Entered empty receive queue: {receive_queue.qsize()}")
                 return
             
             # check what data it is
@@ -234,7 +237,9 @@ class BeetleDevice:
             # print(f"bullet_count:{bullet_count}")
             # print(f"beetle_device_id: {beetle_device_id}")
             # remove junk data
-            print(data_type)
+            print(f"data type: {data_type}")
+            print(f"beetle device id: {beetle_device_id}")
+            print(f"player num: {player_num}")
             if data_type != "b" and data_type != "h":
                 print("entered removing junk")
                 receive_queue.get() 
@@ -255,7 +260,7 @@ class BeetleDevice:
                 encrypted_updated_bullet_count = struct.pack('B', data_content)
                 self.characteristic.write(encrypted_updated_bullet_count)
 
-            if data_type == "h" and  beetle_device_id == "b3" and player_num == 1:
+            if data_type == "h" and beetle_device_id == "b2" and player_num == 1:
                     logging.debug("Entered health update for player 1")
                     receive_queue.get_nowait()
                     encrypted_flag = 'g'.encode('utf-8')
@@ -263,7 +268,7 @@ class BeetleDevice:
                     encrypted_updated_health = struct.pack('B', data_content)
                     self.characteristic.write(encrypted_updated_health)
             
-            if data_type == "h" and  beetle_device_id == "b2" and player_num == 2:
+            if data_type == "h" and  beetle_device_id == "b3" and player_num == 2:
                     logging.debug("Entered health update for player 2")
                     receive_queue.get_nowait()
                     encrypted_flag = 'g'.encode('utf-8')

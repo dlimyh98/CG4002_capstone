@@ -47,8 +47,9 @@ class MyDelegate(btle.DefaultDelegate):
         if self.beetle.completed_handshake:
             if time.time() - self.last_received_time > self.receive_interval:
                 print(f"receive queue size:{self.receive_queue.qsize()} ")
-                self.beetle.send_ext(self.beetle.name, self.receive_queue)
-                self.last_received_time = time.time()
+                if self.beetle.name != "b1" and self.beetle.name != "b5":
+                    self.beetle.send_ext(self.beetle.name, self.receive_queue)
+                    self.last_received_time = time.time()
 
     def process_packet(self, data):
         self.count +=1
