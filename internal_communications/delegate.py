@@ -12,6 +12,7 @@ BEETLE_THREE_DATA=4
 BEETLE_FOUR_DATA=5 # Gun Beetle 1
 BEETLE_FIVE_DATA=6
 BEETLE_SIX_DATA=7 # Gun Beetle 2
+MPU_READY = 100
 MAX_FAIL_COUNT = 5
 
 class MyDelegate(btle.DefaultDelegate):
@@ -30,6 +31,8 @@ class MyDelegate(btle.DefaultDelegate):
         self.receive_queue = receive_queue
         self.last_received_time = 0
         self.receive_interval = 2
+        self.packet_count = 0
+        self.packet_count_2 = 0
 
     def handleNotification(self, cHandle, data):
         # Append data to buffer        
@@ -55,6 +58,7 @@ class MyDelegate(btle.DefaultDelegate):
         self.count +=1
         try:
             pkt_id = data[0]
+
             if (pkt_id == BEETLE_ONE_DATA):
                 pkt_data = struct.unpack('=BbbbhhhHBBBBI', data)
                 
@@ -62,9 +66,11 @@ class MyDelegate(btle.DefaultDelegate):
                 
                     self.seq_no = pkt_data[-3]
                     self.beetle.total_bytes_received += 9 #Only data bytes
-                    logging.info(f"[purple] Beetle One Packet received successfully: {pkt_data}[/purple]")
+                    print(f"[purple] Beetle One Packet received successfully: {pkt_data}[/purple]")
                     self.send_queue.put(data)
-                    self.beetle.data_collector.store_data(pkt_data[1:7])
+                    self.packet_count += 1
+                    logging.debug(f"packet count from b1: {self.packet_count}")
+                    # self.beetle.data_collector.store_data(pkt_data[1:7])
 
             elif (pkt_id == BEETLE_TWO_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
@@ -117,6 +123,8 @@ class MyDelegate(btle.DefaultDelegate):
 
                     print(f"[yellow]Beetle Five Packet received successfully: {pkt_data}[/yellow]")
                     logging.debug(f"Packet 5 data: {data}")
+                    self.packet_count_2 += 1
+                    logging.debug(f"packet count from b5: {self.packet_count_2}")
                     self.send_queue.put(data)
 
             # Gun Beetle 2 No ack
@@ -138,6 +146,11 @@ class MyDelegate(btle.DefaultDelegate):
                 if(self.validate_packet(data)):
                     print(f"HANDSHAKE SUCCESS: {data}")
                     self.beetle.handshake_replied = True
+            
+            elif(pkt_id == MPU_READY):
+                if(self.validate_packet(data)):
+                    print(f"MPU READY; START ACTION FOR: {self.beetle.name}")
+
             else:
                 pass
 
