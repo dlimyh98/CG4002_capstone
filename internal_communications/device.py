@@ -8,7 +8,7 @@ import logging
 from states import States
 from delegate import MyDelegate
 from errors import MaxCRCFailureError
-from data_collector import DataCollector
+# from data_collector import DataCollector
 
 
 VERIFIED = "v"
@@ -40,7 +40,8 @@ class BeetleDevice:
 
         self.send_queue = send_queue
         self.receive_queue = receive_queue
-        self.data_collector = DataCollector("Yitching2", "test2")
+        # self.data_collector = DataCollector("Yitching2", "test2")
+        self.last_glove_receive_time = 0
 
     def beetle_handler(self):
 
@@ -60,7 +61,13 @@ class BeetleDevice:
                     # if not the glove beetles then check for updates to be sent to hardware
                     if self.name != "b1" and self.name != "b5":
                         self.send_ext(self.name, self.receive_queue)
-        
+
+                    if self.name == "b1" or self.name == "b5":
+                        self.characteristic.write('e'.encode('utf-8'))
+
+                    if (self.name == "b1" or self.name == "b5") and (time.time() - self.last_glove_receive_time > 40):
+                        raise btle.BTLEException("No glove data reconnecting...")
+                        
             except btle.BTLEException as e:
                 print("BTLEException, restarting connection: ", e)
                 self.reset_flags()
@@ -231,7 +238,7 @@ class BeetleDevice:
             
             logging.debug(f"Send Ext:{current_data}")
             data_type, player_num, data_content = current_data[0], current_data[1], current_data[2]
-
+    
             # If update to bullet count
             # print(f"health:{health}")
             # print(f"bullet_count:{bullet_count}")
