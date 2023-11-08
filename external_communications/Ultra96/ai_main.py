@@ -1,16 +1,19 @@
+# BACKUP CODE FOR AI_MAIN on U96
+
 import pandas as pd
-from ai_MLPClassifier import MLPClassifier30
+from ai_MLPClassifier66 import MLPClassifier66
 import time
 import asyncio
 import queue
 import threading
+import logging
 
 class MainApp(threading.Thread):
 
     def __init__(self, loop):
         super().__init__()
-        self.mlp = MLPClassifier30()
-        # self.data_source = pd.read_csv(csv_file, chunksize=1)  # Read one row at a time to simulate streaming
+        self.mlp = MLPClassifier66()
+        #self.mlp = CNNClassifier()
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
 
@@ -26,12 +29,18 @@ class MainApp(threading.Thread):
     def start(self):
         while True:
             try:
-                # dequeue data from the input_queue
+                self.mlp.handle_timeout(6)
+                self.mlp.handle_timeout(2)
+                # dequeue data from the input_queue 
+                # glove [0:7]
                 data = self.input_queue.get()
-                action = self.mlp.handle_sample(data)
-                if action is not None:
-                    self.output_queue.put(action)
-                # self.mlp.record_sample(data)
+                result = self.mlp.handle_sample(data)
+                if result is not None:
+                   player_id, action = result
+                   self.output_queue.put((player_id, action))
+                   logging.info(f"[AI main]: action: {player_id, action}")
+                   print(f"[AI main]: Action classification: {player_id, action}")
+                # self.mlp.record_sample(data[1:7])
                 
             except Exception as e:
                 print(f"MainApp error: {e}")
