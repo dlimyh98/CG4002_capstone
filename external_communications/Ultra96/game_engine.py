@@ -51,8 +51,7 @@ class GameEngine:
         self.p2_gun_input_queue = queue.Queue() 
         self.p1_vest_input_queue = queue.Queue()
         self.p2_vest_input_queue = queue.Queue() 
-        self.p1_action_input_queue = queue.Queue(0)
-        self.p2_action_input_queue = queue.Queue() 
+        self.action_input_queue = queue.Queue() 
         self.visualizer_client_input_queue = queue.Queue() # data from visualizer (confirmation)
         self.eval_client_input_queue = queue.Queue() # data from eval client
 
@@ -142,41 +141,43 @@ class GameEngine:
         directly update the game state and send to Eval Client.
         """
         while True:
-            if not self.p1_action_input_queue.empty():
-                p1_action = self.p1_action_input_queue.get()
-                player_id = 1
-                logging.info(f"[GameEngine] p1 action: {p1_action}")
-                self.check_action_received(player_id, p1_action)
-            
-            if not self.p2_action_input_queue.empty():
-                p2_action = self.p2_action_input_queue.get()
-                player_id = 2
-                logging.info(f"[GameEngine] p2 action: {p2_action}")
-                self.check_action_received(player_id, p1_action)
+            # this should be a tuple (player_id, action)
+            player_id, action = self.action_input_queue.get()
+            logging.info(f"[GameEngine] action: {player_id, action}")
+            self.check_action_received(player_id, action)
 
     def check_action_received(self, player_id, action):
-        while True:
-            if action in possible_actions:
-                if action in utility_actions:
-                # if utility, update game state, send to visualizer
-                    self.handle_utility(player_id, action)
+        print(f"[GameEngine]: check action received: {player_id, action}")
+        if action in possible_actions:
+            if action in utility_actions:
+            # if utility, update game state, send to visualizer
+                self.handle_utility(player_id, action)
+            
+                # construct visualizer packet and send to visualizer
+                dummy_visualizer_packet = self.construct_visualizer_utility_packet(player_id, action)
+                self.visualizer_client_output_queue.put(dummy_visualizer_packet)
 
-                # else, send a packet to visualizer and wait for confirmation
-                elif action in special_actions:
-                    # construct visualizer packet and send to visualizer
-                    dummy_visualizer_packet = self.construct_visualizer_action_packet(player_id, action)
-                    self.visualizer_client_output_queue.put(dummy_visualizer_packet)
+            # else, send a packet to visualizer and wait for confirmation
+            elif action in special_actions:
 
-                    # wait for visualizer_client_input_queue with timeout
-                    try:
-                        confirmation_packet = self.visualizer_client_input_queue.get(block=True, timeout=1)
-                        self.handle_visualizer_confirmation_packet(confirmation_packet)
-                    except queue.Empty:
-                        logging.info("[GameEngine] action_processing_thread: TIMEOUT")
+                # if grenade, deduct count first
+                if action == 'grenade':
+                    self.handle_grenade(player_id)    
 
-            # send game state + action to eval client and visualizer
-            self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
-            self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
+                # construct visualizer packet and send to visualizer
+                dummy_visualizer_packet = self.construct_visualizer_action_packet(player_id, action)
+                self.visualizer_client_output_queue.put(dummy_visualizer_packet)
+
+                # wait for visualizer_client_input_queue with timeout
+                try:
+                    confirmation_packet = self.visualizer_client_input_queue.get(block=True, timeout=1)
+                    self.handle_visualizer_confirmation_packet(confirmation_packet)
+                except queue.Empty:
+                    logging.info("[GameEngine] action_processing_thread: TIMEOUT")
+
+        # send game state + action to eval client and visualizer
+        self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
+        self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
         
         
     # Thread 3: waiting for a message from eval client
@@ -193,6 +194,11 @@ class GameEngine:
 
             # update game state
             self.update_game_state(game_state_dict)
+
+            # update visualizer
+            self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
+            logging.info(f"[GameEngine] game_state_thread UPDATE: visualizer updated.")
+
             # send back player HP and bullet count back to Relay Node server
             # break down tuple here
             tuples_to_relay_node = self.extract_eval_client_game_state_info(game_state_dict)
@@ -236,9 +242,8 @@ class GameEngine:
                 acting_player.currentShield = Player.maxShield
                 acting_player.currentShields -= 1
 
-        elif utility_action == 'logout':
-            #TODO  
-            return   
+        # elif utility_action == 'logout': 
+        #     return   
 
     def handle_actions(self, player_id, special_action, hit):
         """
@@ -246,13 +251,12 @@ class GameEngine:
 
         Hit variable will be determined from visualizer client's response.
         """  
-        acting_player = self.player1 if player_id == 1 else self.player2
+        # acting_player = self.player1 if player_id == 1 else self.player2
         target_player = self.player2 if player_id == 1 else self.player1
 
         if special_action == 'grenade':
-            if acting_player.currentGrenades > 0:
-                acting_player.currentGrenades -= 1
-
+            # if acting_player.currentGrenades > 0:
+            #     acting_player.currentGrenades -= 1
             damage = 30 if hit else 0
 
         elif special_action in ['punch', 'web', 'portal', 'spear', 'hammer']:
@@ -275,6 +279,11 @@ class GameEngine:
             if target_player.currentHealth <= 0:
                 target_player.deaths += 1
                 target_player.respawn()
+    
+    def handle_grenade(self, player_id):
+        acting_player = self.player1 if player_id == 1 else self.player2
+        if acting_player.currentGrenades > 0:
+            acting_player.currentGrenades -= 1
 
     # Construct visualizer game_state packet and returns it as a string
     def construct_visualizer_game_state_packet(self):
@@ -344,14 +353,14 @@ class GameEngine:
             "target_id":"player1"
         }
         """
-        player_id = "player1" if player_id == 1 else "player2"
-        target_id = "player1" if player_id == 2 else "player2"
+        player_id_str = "player1" if player_id == 1 else "player2"
+        target_id_str = "player1" if player_id == 2 else "player2"
         
         packet = {
             "type": "action",
-            "player_id": player_id,
+            "player_id": player_id_str,
             "action_type": action,
-            "target_id": target_id
+            "target_id": target_id_str
         }
         
         return json.dumps(packet)    
@@ -449,7 +458,6 @@ class GameEngine:
         logging.info(f"[GameEngine] extract_eval_client_game_state_info: {p1_bullets_tuple}, {p1_hp_tuple}, {p2_bullets_tuple}, {p2_hp_tuple}")
         return p1_bullets_tuple, p1_hp_tuple, p2_bullets_tuple, p2_hp_tuple
         
-
     def update_game_state(self, game_state_data):
         """
         Update game state.
@@ -492,6 +500,9 @@ class GameEngine:
 
             logging.info("Game Engine started.")
             print("Game Engine started.")
+        except Exception as e:
+            logging.info(f"[GameEngine]: Error {e}")
+            pass
         except KeyboardInterrupt:
             pass
 

@@ -129,7 +129,7 @@ class RelayNodeServer:
             elif (pkt_id == BEETLE_SIX_DATA):
                 pkt_data = struct.unpack('=BHHHHHHHBI', data)
                 
-                return pkt_data  
+                return pkt_data [0:7]
             else:
                 pass
 
