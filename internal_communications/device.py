@@ -71,8 +71,8 @@ class BeetleDevice:
                     if self.name == "b1" or self.name == "b5":
                         self.characteristic.write('e'.encode('utf-8'))
 
-                    if (self.name == "b1" or self.name == "b5") and (time.time() - self.last_glove_receive_time > 40):
-                        raise btle.BTLEException("No glove data reconnecting...")
+                    # if (self.name == "b1" or self.name == "b5") and (time.time() - self.last_glove_receive_time > 40):
+                    #     raise btle.BTLEException("No glove data reconnecting...")
                         
             except btle.BTLEException as e:
                 print("BTLEException, restarting connection: ", e)
@@ -292,74 +292,4 @@ class BeetleDevice:
                 
         except Exception as e:
             print(f"No data retrieved, {e}")
-
-    # def send_ext(self, beetle_device_id, receive_queue):
-    #     # If received message meant for gun beetles i..e., bullet count
-    #     # Assume format ("b", 1, 4) || ("b", 2, 3)
-    #     # Assume format ("h", 1, 30) || ("h", 2, 40)
-    #     try:
-    #         print("Entered send Ext")
-
-    #         # if not receive_queue.empty():
-    #         #     logging.info(f"Received: {receive_queue.get()}")
-
-    #         if receive_queue.empty():
-    #             print(f"Entered empty receive queue: {receive_queue.qsize()}")
-    #             return
-            
-    #         # check what data it is
-    #         current_data = receive_queue.queue[0]
-
-    #         if len(current_data) != 3:
-    #             receive_queue.get()
-            
-    #         logging.debug(f"Send Ext:{current_data}")
-    #         data_type, player_num, data_content = current_data[0], current_data[1], current_data[2]
-    
-    #         # If update to bullet count
-    #         # print(f"health:{health}")
-    #         # print(f"bullet_count:{bullet_count}")
-    #         # print(f"beetle_device_id: {beetle_device_id}")
-    #         # remove junk data
-    #         print(f"data type: {data_type}")
-    #         print(f"beetle device id: {beetle_device_id}")
-    #         print(f"player num: {player_num}")
-    #         if data_type != "b" and data_type != "h":
-    #             print("entered removing junk")
-    #             receive_queue.get() 
-
-    #         if data_type == "b" and beetle_device_id == "b4" and player_num == 1:
-    #             logging.debug("Entered gun update for player 1")
-    #             receive_queue.get_nowait()  # remove data from queue
-    #             encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
-    #             self.characteristic.write(encrypted_flag)
-    #             encrypted_updated_bullet_count = struct.pack('B', data_content)
-    #             self.characteristic.write(encrypted_updated_bullet_count)
-        
-    #         if data_type == "b" and beetle_device_id == "b6" and player_num == 2:
-    #             logging.debug("Entered gun update for player 2")
-    #             receive_queue.get_nowait()  # remove data from queue
-    #             encrypted_flag = 'g'.encode('utf-8') # Send "send data flag" to arduino
-    #             self.characteristic.write(encrypted_flag)
-    #             encrypted_updated_bullet_count = struct.pack('B', data_content)
-    #             self.characteristic.write(encrypted_updated_bullet_count)
-
-    #         if data_type == "h" and beetle_device_id == "b2" and player_num == 1:
-    #                 logging.debug("Entered health update for player 1")
-    #                 receive_queue.get_nowait()
-    #                 encrypted_flag = 'g'.encode('utf-8')
-    #                 self.characteristic.write(encrypted_flag)
-    #                 encrypted_updated_health = struct.pack('B', data_content)
-    #                 self.characteristic.write(encrypted_updated_health)
-            
-    #         if data_type == "h" and  beetle_device_id == "b3" and player_num == 2:
-    #                 logging.debug("Entered health update for player 2")
-    #                 receive_queue.get_nowait()
-    #                 encrypted_flag = 'g'.encode('utf-8')
-    #                 self.characteristic.write(encrypted_flag)
-    #                 encrypted_updated_health = struct.pack('B', data_content)
-    #                 self.characteristic.write(encrypted_updated_health)
-                
-    #     except Exception as e:
-    #         print(f"No data retrieved, {e}")
 
