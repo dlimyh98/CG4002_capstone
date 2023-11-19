@@ -1,5 +1,3 @@
-# BACKUP CODE FOR AI_MAIN on U96
-
 import pandas as pd
 from ai_MLPClassifier66 import MLPClassifier66
 import time
@@ -31,8 +29,6 @@ class MainApp(threading.Thread):
             try:
                 self.mlp.handle_timeout(6)
                 self.mlp.handle_timeout(2)
-                # dequeue data from the input_queue 
-                # glove [0:7]
                 data = self.input_queue.get()
                 result = self.mlp.handle_sample(data)
                 if result is not None:
@@ -52,6 +48,5 @@ class MainApp(threading.Thread):
 
 
 if __name__ == '__main__':
-    # app = MainApp('../data/spear_raw.csv')
     app = MainApp()
     app.run()

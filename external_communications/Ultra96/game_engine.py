@@ -6,7 +6,6 @@ import asyncio
 import json
 
 # constants for received messages
-# this should expand to player 1 and 2 later
 PLAYER_1_GUN = 5
 PLAYER_1_VEST = 4
 PLAYER_2_GUN = 7
@@ -52,8 +51,8 @@ class GameEngine:
         self.p1_vest_input_queue = queue.Queue()
         self.p2_vest_input_queue = queue.Queue() 
         self.action_input_queue = queue.Queue() 
-        self.visualizer_client_input_queue = queue.Queue() # data from visualizer (confirmation)
-        self.eval_client_input_queue = queue.Queue() # data from eval client
+        self.visualizer_client_input_queue = queue.Queue() 
+        self.eval_client_input_queue = queue.Queue() 
 
         # output queues
         self.visualizer_client_output_queue = queue.Queue()
@@ -92,8 +91,6 @@ class GameEngine:
                     logging.info(f"[GameEngine] p2 gun packet: {player_id}")
                     self.check_vest_received(player_id, self.p1_vest_input_queue, action)
 
-            # include some error handling here 
-
 
     def check_vest_received(self, player_id, target_vest_queue, action):
         """
@@ -118,6 +115,7 @@ class GameEngine:
                 logging.info(f"[GameEngine] gun_vest_thread HIT: tuple sent: {tuple}")                   
 
             # send updated game state + action to eval client
+            self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
             self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
 
         except queue.Empty:
@@ -132,6 +130,7 @@ class GameEngine:
                 logging.info(f"[GameEngine] gun_vest_thread MISS: tuple sent: {tuple}")                     
 
             # send updated game state + action to eval client
+            self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
             self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
 
     # Thread 2: for incoming action from AI
@@ -156,6 +155,7 @@ class GameEngine:
                 # construct visualizer packet and send to visualizer
                 dummy_visualizer_packet = self.construct_visualizer_utility_packet(player_id, action)
                 self.visualizer_client_output_queue.put(dummy_visualizer_packet)
+                logging.info(f"[GameEngine] action to visualizer: {dummy_visualizer_packet}")
 
             # else, send a packet to visualizer and wait for confirmation
             elif action in special_actions:
@@ -167,19 +167,24 @@ class GameEngine:
                 # construct visualizer packet and send to visualizer
                 dummy_visualizer_packet = self.construct_visualizer_action_packet(player_id, action)
                 self.visualizer_client_output_queue.put(dummy_visualizer_packet)
-
+                logging.info(f"[GameEngine] action to visualizer: {dummy_visualizer_packet}")
                 # wait for visualizer_client_input_queue with timeout
                 try:
                     confirmation_packet = self.visualizer_client_input_queue.get(block=True, timeout=1)
                     self.handle_visualizer_confirmation_packet(confirmation_packet)
+                    logging.info(f"[GameEngine] confirmation packety: {dummy_visualizer_packet}")
                 except queue.Empty:
                     logging.info("[GameEngine] action_processing_thread: TIMEOUT")
 
-        # send game state + action to eval client and visualizer
+        # update hardware + send game state + action to eval client and visualizer
+        tuples_to_relay_node = self.extract_game_engine_info()
+        for tuple in tuples_to_relay_node:
+            self.relay_node_server_output_queue.put(str(tuple) + '|')
+            logging.info(f"[GameEngine] action_thread: tuple sent: {tuple}")   
+
         self.visualizer_client_output_queue.put(self.construct_visualizer_game_state_packet())
         self.eval_client_output_queue.put(self.convert_game_engine_state_to_eval_client(player_id, action))
-        
-        
+             
     # Thread 3: waiting for a message from eval client
     def game_state_processing_thread(self):
         """
@@ -231,19 +236,21 @@ class GameEngine:
 
         These actions do not require a confirmation from the Visualizer.
         """
-        acting_player = self.player1 if player_id == "player1" else self.player2
+        acting_player = self.player1 if player_id == 1 else self.player2
 
         if utility_action == 'reload':
             acting_player.currentBullets = Player.maxBullets
 
         elif utility_action == 'shield':
-            if acting_player.currentShields > 0:
-                acting_player.isShieldActive = True
-                acting_player.currentShield = Player.maxShield
-                acting_player.currentShields -= 1
+            if acting_player.currentShields <= 0:
+                return
+            if acting_player.isShieldActive == True:
+                return
 
-        # elif utility_action == 'logout': 
-        #     return   
+            acting_player.isShieldActive = True
+            acting_player.currentShield = Player.maxShield
+            acting_player.currentShields -= 1
+   
 
     def handle_actions(self, player_id, special_action, hit):
         """
@@ -251,13 +258,12 @@ class GameEngine:
 
         Hit variable will be determined from visualizer client's response.
         """  
-        # acting_player = self.player1 if player_id == 1 else self.player2
+        #print(f"Handle action: {special_action}")
+        acting_player = self.player1 if player_id == 1 else self.player2
         target_player = self.player2 if player_id == 1 else self.player1
 
         if special_action == 'grenade':
-            # if acting_player.currentGrenades > 0:
-            #     acting_player.currentGrenades -= 1
-            damage = 30 if hit else 0
+            damage = 30 if (hit and acting_player.currentGrenades > -1) else 0
 
         elif special_action in ['punch', 'web', 'portal', 'spear', 'hammer']:
             damage = 10 if hit else 0  
@@ -265,10 +271,9 @@ class GameEngine:
         self.apply_damage(target_player, damage)
  
     def apply_damage(self, target_player, damage):
-        #print(f"Inside apply_damage, applying {damage} damage to {target_player}")
         if target_player.isShieldActive:
             remaining_shield = target_player.currentShield - damage
-            if remaining_shield >= 0:
+            if remaining_shield > 0:
                 target_player.currentShield = remaining_shield
             else:
                 target_player.currentHealth += remaining_shield if remaining_shield < 0 else 0
@@ -282,7 +287,7 @@ class GameEngine:
     
     def handle_grenade(self, player_id):
         acting_player = self.player1 if player_id == 1 else self.player2
-        if acting_player.currentGrenades > 0:
+        if acting_player.currentGrenades >= 0:
             acting_player.currentGrenades -= 1
 
     # Construct visualizer game_state packet and returns it as a string
@@ -403,7 +408,7 @@ class GameEngine:
         logging.info(f"[XXX]: packet: {visualizer_confirmation_packet}")
         visualizer_confirmation_packet = json.loads(visualizer_confirmation_packet)
         player_id_str = visualizer_confirmation_packet['player_id']
-        player_id = 1 if player_id_str == 'player1' else 2
+        player_id = 1 if player_id_str.lower() == 'player1' else 2
         action_type = visualizer_confirmation_packet['action_type']
         hit = visualizer_confirmation_packet['hit']
 

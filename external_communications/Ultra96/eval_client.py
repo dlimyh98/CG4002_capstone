@@ -8,38 +8,6 @@ from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 
-# hardcoded sample packets to send
-game_state_dict = {
-    "p1": {
-        "hp": 100,
-        "bullets": 6,
-        "grenades": 2,
-        "shield_hp": 30,
-        "deaths": 0,
-        "shields": 2
-    },
-    "p2": {
-        "hp": 100,
-        "bullets": 6,
-        "grenades": 2,
-        "shield_hp": 30,
-        "deaths": 0,
-        "shields": 2
-    },
-}
-
-sample_message_data = {
-    "player_id": 1,
-    "action": "gun",
-    "game_state": game_state_dict
-}
-
-sample_message_data2 = {
-    "player_id": 1,
-    "action": "shield",
-    "game_state": game_state_dict
-}
-
 class EvalClient:
     def __init__(self, server_ip, secret_key, handshake_password):
         self.server_ip = server_ip
@@ -104,7 +72,6 @@ class EvalClient:
                     break
                 msg = data.decode("utf8")
                 await self.receive_queue.put(msg)
-                # print("[EvalServer -> EvalClient:]" + msg)
                 logging.info("[EvalServer -> EvalClient:]" + msg)
         except ConnectionResetError:
             print("Connection reset.")
@@ -131,10 +98,7 @@ class EvalClient:
         await self.send_queue.put(self.handshake_password)
         print("EvalClient: sent handshake.")
         logging.info("EvalClient: Sent handshake.")
-        
-        # wait for both tasks to complete
-        #await asyncio.gather(self.send_task, self.receive_task)
-    
+           
 
     async def stop(self):
         self.is_running = False

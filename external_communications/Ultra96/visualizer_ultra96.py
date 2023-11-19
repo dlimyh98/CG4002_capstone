@@ -70,16 +70,3 @@ class VisualizerClient:
         self.client.disconnect()
         print("Visualizer Client disconnected.")
     
-# def main():
-#     visuazlier_client = VisualizerClient()
-#     visuazlier_client.start()
-#     try:
-#         while True:
-#             pass
-#     except KeyboardInterrupt:
-#         pass
-#     visuazlier_client.disconnect()
-#     print("Visuazlier on Ultra96 closed.")
-
-# if __name__ == '__main__':
-#     main()

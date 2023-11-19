@@ -62,9 +62,7 @@ class Ultra96:
 
                 asyncio.create_task(self.redirect_GameEngine_to_Visualizer()),
                 asyncio.create_task(self.redirect_Visualizer_to_GameEngine()),
-                asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer()),
-
-                asyncio.create_task(self.display_frequency()) # this should be removed after testing
+                asyncio.create_task(self.redirect_GameEngine_to_RelayNodeServer())
             )
         except KeyboardInterrupt:
             pass
@@ -73,14 +71,6 @@ class Ultra96:
             print(f"Ultra96 error: {e}")
         finally:
             await self.stop()
-
-    async def display_frequency(self):
-        while self.is_running:
-            await asyncio.sleep(10)  # sleep for 10 seconds
-            avg_per_second = self.packet_count / 10  # calculate average per second
-            logging.info(f"[RelayNode->AI/GameEngine]: Average packets received per second over the last 10 seconds: {avg_per_second}")
-            print(f"[RelayNode->AI/GameEngine]: Average packets received per second over the last 10 seconds: {avg_per_second}")
-            self.packet_count = 0  # reset the packet count
 
     async def redirect_RelayNode_to_AI_or_GameEngine(self):
         """
@@ -96,8 +86,6 @@ class Ultra96:
                 logging.info("[RelayNode->AI/GameEngine]: Enter pipeline.")
                 data = await self.relay_node_server.receive_queue.get()
 
-                #print(f"[RelayNode->AI/GameEngine]: queue size: {self.relay_node_server.receive_queue.qsize()}")
-
                 logging.info(f"[RelayNode->AI/GameEngine]: Data from relay node server: {data}")
 
                 self.packet_count += 1
@@ -105,7 +93,7 @@ class Ultra96:
                 # glove
                 if data[0] == BEETLE_FIVE_DATA or data[0] == BEETLE_ONE_DATA:
                     await self.loop.run_in_executor(None, self.ai_predictor.input_queue.put, data[0:7])
-                    logging.info(f"[RelayNode->AI/GameEngine]: Data to AI: {data[0:7]}") 
+                    logging.debug(f"[RelayNode->AI/GameEngine]: Data to AI: {data[0:7]}") 
                 
                 # player 1 gun
                 elif data[0] == BEETLE_FOUR_DATA:
@@ -143,9 +131,6 @@ class Ultra96:
                 logging.info("[AI->GameEngine]: Enter pipeline.")   
                 # dequeue output data from AI
                 data = await self.loop.run_in_executor(None, self.ai_predictor.output_queue.get)
-                # actions = ["gun",  "web", "grenade",
-                #     "portal", "punch", "hammer", "spear", "shield", "reload", "logout"]
-                # if data in actions:
                 await self.loop.run_in_executor(None, self.game_engine.action_input_queue.put, data)
 
                 logging.info(f"[AI->GameEngine]: Data to GameEngine: {data}")
@@ -255,7 +240,6 @@ class Ultra96:
             await self.relay_node_server.stop(),
             await self.visuazlier_client.stop()
         )
-        # print a logout message
         print("Ultra96 stopped.")
         logging.info("Ultra96 stopped.")
 

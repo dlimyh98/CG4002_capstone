@@ -29,14 +29,6 @@ class RelayNodeServer:
         self.connected_clients = set() # store connected client addresses
 
         self.packet_count = 0
-
-    async def display_frequency(self):
-        while self.is_running:
-            await asyncio.sleep(10)  # sleep for 10 seconds
-            avg_per_second = self.packet_count / 10  # calculate average per second
-            logging.info(f"[RelayNodeServer]: Average packets received per second over the last 10 seconds: {avg_per_second}")
-            print(f"Average packets received per second over the last 10 seconds: {avg_per_second}")
-            self.packet_count = 0  # reset the packet count
     
     async def handle_client(self, reader, writer):
         client_address = writer.get_extra_info('peername')
@@ -68,8 +60,6 @@ class RelayNodeServer:
             while self.is_running:
                 message = await self.send_queue.get()
                 message = message.encode()
-                #message_len = str(len(message))
-                #encoded_message = bytes(message_len, encoding='utf8') + b'_' + message.encode("utf8")
                 writer.write(message)
                 logging.info(f"[RelayNodeServer]: MESSAGE: {message}")
                 await writer.drain()
@@ -147,8 +137,6 @@ class RelayNodeServer:
         print("Relay Node server starting:")
         logging.info("Relay Node server starting:")
         self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
-
-        frequency_display_task = asyncio.create_task(self.display_frequency())
 
         try: 
             async with self.server:
