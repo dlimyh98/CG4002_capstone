@@ -25,15 +25,15 @@ Ensure the `server_address` variable in the `helper.js` file located in the `htm
 
 ## Main code
 ### With Eval Server
-Open two terminals, one with path `external_communications/eval_server/server`.
-  Run the evaluation server: `python WebSocketServer.py`.
-    Open `index.html` inside `eval_server/html` to interface with the evaluation server.
+Open two terminals, one with path `external_communications/eval_server/server`.  
+Run the evaluation server: `python WebSocketServer.py`.  
+Open `index.html` inside `eval_server/html` to interface with the evaluation server.  
 
-For the second terminal, `cd` into `external_communications/Ultra96`.
-  For the AI classification purpose, this terminal must be ran in root. Run the following commands: `sudo -s`, then `source run.sh`.
-    Run with `python main.py`.
+For the second terminal, `cd` into `external_communications/Ultra96`.  
+For the AI classification purpose, this terminal must be ran in root. Run the following commands: `sudo -s`, then `source run.sh`.  
+Run with `python main.py`.  
 
 ### Without Eval Server (free-flow)
-Only one terminal is needed, with path `external_comunications/2p_freeflow`.
-  For the AI classification purpose, this terminal must be ran in root. Run the following commands: `sudo -s`, then `source run.sh`.
-  Run with `python main.py`.
+Only one terminal is needed, with path `external_comunications/2p_freeflow`.  
+For the AI classification purpose, this terminal must be ran in root. Run the following commands: `sudo -s`, then `source run.sh`.  
+Run with `python main.py`.  
